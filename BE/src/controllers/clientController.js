@@ -2,7 +2,6 @@ const jwt = require("jsonwebtoken");
 const db = require("../configs/db");
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
-const e = require("express");
 const jwtSecret = process.env.DB_TOKEN_SECRET || "default_secret_key";
 
 const createClient = async (req, res) => {
