@@ -2,13 +2,14 @@ const jwt = require("jsonwebtoken");
 const db = require("../configs/db");
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
+const dotenv = require("dotenv");
+dotenv.config();
 const jwtSecret = process.env.DB_TOKEN_SECRET || "default_secret_key";
 
 const createClient = async (req, res) => {
-  const { email, phone, password_hash, name, gender } = req.body;
+  const { email, phone, password_hash, name } = req.body;
   const id = uuidv4();
 
-  console.log(email, phone, password_hash, name, gender);
   try {
     const password = await bcrypt.hash(password_hash, 10);
 
@@ -20,8 +21,8 @@ const createClient = async (req, res) => {
 
     // 2. Thêm vào bảng client_profiles
     await db.query(
-      `INSERT INTO client_profiles (user_id, name, gender, avatar) VALUES (?, ?, ?, ?)`,
-      [id, name, gender, '']
+      `INSERT INTO client_profiles (user_id, name) VALUES (?, ?)`,
+      [id, name]
     );
 
     res.status(201).json({ message: "Đăng ký client thành công", id });
@@ -57,7 +58,7 @@ const getClientById = async (req, res) => {
     const [users] = await db.query(
       `SELECT 
         users.id, users.email, users.phone, users.is_verified,
-        client_profiles.name, client_profiles.dob, client_profiles.gender
+        client_profiles.name, client_profiles.dob, client_profiles.gender, client_profiles.avatar
       FROM users
       JOIN client_profiles ON users.id = client_profiles.user_id
       WHERE users.id = ? AND users.role = 'client'`,
@@ -153,7 +154,6 @@ const getMe = async (req, res) => {
       return res.status(403).json({ message: "Token không hợp lệ" });
     }
 
-
     const userId = decoded.id;
 
     const [users] = await db.query(
@@ -181,21 +181,19 @@ const getIdByEmail = async (req, res) => {
   const email = req.params.email;
 
   try {
-    const [rows] = await db.query(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
-    );
+    const [rows] = await db.query("SELECT id FROM users WHERE email = ?", [
+      email,
+    ]);
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
     res.status(200).json({ id: rows[0].id });
   } catch (err) {
-    res.status(500).json({ message: 'Lỗi server' });
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
-
 
 const verifyClient = async (req, res) => {
   const { id } = req.params;
@@ -207,7 +205,9 @@ const verifyClient = async (req, res) => {
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Không tìm thấy client để xác thực" });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy client để xác thực" });
     }
 
     res.json({ message: "Xác thực client thành công" });
@@ -255,14 +255,17 @@ const updateClient = async (req, res) => {
   const { id } = req.params;
   const { email, phone, name, gender, dob, avatar } = req.body;
 
+  console.log(id, email, phone, name, gender, dob, avatar);
+
   try {
     // Update users table
-    if (email || phone) {
-      await db.query(
-        `UPDATE users SET email = COALESCE(?, email), phone = COALESCE(?, phone) WHERE id = ? AND role = 'client'`,
-        [email, phone, id]
-      );
-    }
+    await db.query(
+      `UPDATE users SET 
+        email = COALESCE(?, email), 
+        phone = COALESCE(?, phone) 
+        WHERE id = ? AND role ='client'`,
+      [email, phone, id]
+    );
 
     // Update client_profiles table
     await db.query(
@@ -274,34 +277,63 @@ const updateClient = async (req, res) => {
       WHERE user_id = ?`,
       [name, gender, dob, avatar, id]
     );
-
     res.json({ message: "Cập nhật client thành công" });
   } catch (error) {
     console.error(error);
+    console.error("SQL ERROR:", error.code, error.sqlMessage || error.message);
     res.status(500).json({ message: "Lỗi khi cập nhật client" });
   }
 };
 
 const changePassword = async (req, res) => {
-    const userId = req.user.id;
-    const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+  const { currentPassword, newPassword } = req.body;
 
-    try {
-        const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
-        if (!users || users.length === 0) return res.status(404).json({ message: 'User not found' });
+  try {
+    const [users] = await db.query("SELECT * FROM users WHERE id = ?", [
+      userId,
+    ]);
+    if (!users || users.length === 0)
+      return res.status(404).json({ message: "User not found" });
 
-        const user = users[0];
-        const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-        if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
+    const user = users[0];
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch)
+      return res.status(400).json({ message: "Current password is incorrect" });
 
-        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-        await db.query('UPDATE users SET password_hash = ? WHERE id = ?', [hashedNewPassword, userId]);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [
+      hashedNewPassword,
+      userId,
+    ]);
 
-        res.status(200).json({ message: 'Password changed successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
-    }
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const uploadAvatar = async (req, res) => {
+  const { id } = req.params;
+  const file = req.file;
+
+  if (!file) {
+    return res.status(400).json({ message: "No file uploaded." });
+  }
+
+  const avatarUrl = file.path; // đường dẫn public trên Cloudinary
+
+  try {
+    await db.query("UPDATE client_profiles SET avatar = ? WHERE user_id = ?", [
+      avatarUrl,
+      id,
+    ]);
+    res.status(200).json({ avatarUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 module.exports = {
@@ -315,5 +347,6 @@ module.exports = {
   verifyClient,
   getIdByEmail,
   updateClient,
-  changePassword
+  changePassword,
+  uploadAvatar,
 };

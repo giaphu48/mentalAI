@@ -40,19 +40,16 @@ const OTPModal: React.FC<OTPModalProps> = ({ isOpen, onClose, email }) => {
         }
     }, [countdown, isOpen]);
 
-    // OTP expires after 5 minutes (300 seconds)
-    const OTP_EXPIRE_TIME = 300; // seconds (5 minutes)
+    const OTP_EXPIRE_TIME = 300;
 
     const [otpExpireTime, setOtpExpireTime] = useState<number>(OTP_EXPIRE_TIME);
 
-    // Reset OTP expiration timer when modal opens or OTP is resent
     useEffect(() => {
         if (isOpen) {
             setOtpExpireTime(OTP_EXPIRE_TIME);
         }
     }, [isOpen, sentOtp]);
 
-    // Countdown OTP expiration
     useEffect(() => {
         if (isOpen && otpExpireTime > 0) {
             const timer = setTimeout(() => setOtpExpireTime(otpExpireTime - 1), 1000);
@@ -60,7 +57,6 @@ const OTPModal: React.FC<OTPModalProps> = ({ isOpen, onClose, email }) => {
         }
     }, [otpExpireTime, isOpen]);
 
-    // Show error and invalidate OTP if OTP expired
     useEffect(() => {
         if (otpExpireTime === 0 && isOpen) {
             setError('Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.');
@@ -153,6 +149,20 @@ const OTPModal: React.FC<OTPModalProps> = ({ isOpen, onClose, email }) => {
         }
     };
 
+    const handleClose = async () => {
+        const userId = await getUserIdByEmail(email);
+        if (userId) {
+            try {
+                await axios.delete(`http://localhost:3025/clients/${userId}`);
+                setOtp('');
+                onClose();
+            }
+            catch (err) {
+                setError('Có lỗi đã xảy ra');
+            }
+        }
+    }
+
     if (!isOpen) return null;
 
     return (
@@ -187,7 +197,7 @@ const OTPModal: React.FC<OTPModalProps> = ({ isOpen, onClose, email }) => {
 
                     <div className="flex gap-2">
                         <button
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
                         >
                             Hủy

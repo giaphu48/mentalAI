@@ -1,23 +1,16 @@
+const mysql = require('mysql2/promise');
+const dotenv = require('dotenv');
 
-const mysql = require('mysql2/promise'); // ✅ Dùng mysql2/promise
+dotenv.config();
 
 const db = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'mentalaidb',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});// ✅ Trả ra pool promise
-
-
-// db.connect((err) => {
-//   if (err) {
-//     console.error('❌ Kết nối MySQL thất bại:', err);
-//   } else {
-//     console.log('✅ Đã kết nối MySQL thành công');
-//   }
-// });
+});
 
 module.exports = db;
