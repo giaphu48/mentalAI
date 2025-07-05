@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/hooks/useAppDispatch';
 import Link from 'next/link';
 import axiosInstance from '@/helpers/api/config';
 import { ChevronDown, Globe, Menu, X } from 'lucide-react';
@@ -54,41 +56,66 @@ interface Client {
   dob: Date;
 }
 
+interface UserProfile extends Client {
+  role: 'client' | 'expert' | 'admin';
+}
+
 export default function Header() {
+  const user = useSelector((state: RootState) => state.user.currentUser) || null;
   const [langOpen, setLangOpen] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const serviceDropdownRef = useRef<HTMLDivElement>(null);
-  const [client, setClient] = useState<Client | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { language, setLanguage } = useLanguage();
   type Language = keyof typeof MENU;
   const t = MENU[language as Language];
-  const avatarSrc = client?.avatar || '/image/user.jpg';
+  const avatarSrc = profile?.role === 'admin'
+    ? '/image/user.jpg'
+    : profile?.avatar || '/image/user.jpg';
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
     const fetchUser = async () => {
+      if (!user || !user.role) return;
       try {
-        const res = await axiosInstance.get('/clients/me');
-        setClient(res.data);
-      } catch (error) {
-        console.error('Error fetching user:', error);
+        const res = await axiosInstance.get('/users/me');
+        setProfile({ ...res.data, role: user.role });
+        setIsLoggedIn(true);
+      } catch (err) {
+        console.error('❌ Error fetching user profile:', err);
       }
     };
+    fetchUser();
+  }, [user]);
 
-    if (token) {
-      setIsLoggedIn(true);
-      fetchUser();
-    }
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (serviceDropdownRef.current && !serviceDropdownRef.current.contains(e.target as Node)) {
+        setServiceOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/';
-  };
+  // const logout = () => {
+  //   localStorage.removeItem('token');
+  //   window.location.href = '/';
+  // };
+  const logout = async() => {
+    try {
+      await axiosInstance.post('http://localhost:3025/users/logout', {}, {
+        withCredentials: true
+      });
+      window.location.reload();
+      localStorage.removeItem('persist:root');
+    }
+    catch(err){
+      console.error(err);
+    }
+  }
 
   return (
     <header className="bg-white shadow-md">
@@ -131,25 +158,46 @@ export default function Header() {
 
         {/* Right - Desktop */}
         <div className="hidden md:flex items-center space-x-4">
-          {isLoggedIn && client ? (
+          {isLoggedIn && profile ? (
             <div className="relative">
-              <button className="flex items-center space-x-2" onClick={() => setUserDropdownOpen((prev) => !prev)}>
-                <img src={avatarSrc} alt="Avatar" className="w-10 h-10 rounded-full object-cover border" />
-                {client?.name && <span className="text-sm font-medium">{client.name}</span>}
+              <button className="flex items-center space-x-2" onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
+                <img src={avatarSrc} className="w-10 h-10 rounded-full border object-cover" />
+                <span className="text-sm font-medium">
+                  {profile.role === 'admin' ? 'Admin' : profile.name}
+                </span>
                 <ChevronDown className="w-4 h-4" />
               </button>
+
               {userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-md z-40">
-                  <Link href="/ho-so/thong-tin" className="block px-4 py-2 hover:bg-gray-100">{t.profile}</Link>
-                  <Link href="/ho-so/doi-mat-khau" className="block px-4 py-2 hover:bg-gray-100">{t.change_password}</Link>
-                  <Link href="/ho-so/nhat-ky" className="block px-4 py-2 hover:bg-gray-100">{t.emotional_diary}</Link>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100" onClick={logout}>{t.logout}</button>
+                <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-50">
+                  {profile.role === 'client' && (
+                    <>
+                      <Link href="/ho-so/thong-tin" className="block px-4 py-2 hover:bg-gray-100">{t.profile}</Link>
+                      <Link href="/ho-so/nhat-ky" className="block px-4 py-2 hover:bg-gray-100">{t.emotional_diary}</Link>
+                      <Link href="/ho-so/doi-mat-khau" className="block px-4 py-2 hover:bg-gray-100">{t.change_password}</Link>
+                    </>
+                  )}
+                  {profile.role === 'expert' && (
+                    <>
+                      <Link href="/chuyen-gia/ho-so" className="block px-4 py-2 hover:bg-gray-100">Hồ sơ</Link>
+                      <Link href="/chuyen-gia/lich" className="block px-4 py-2 hover:bg-gray-100">Lịch tư vấn</Link>
+                      <Link href="/chuyen-gia/doi-mat-khau" className="block px-4 py-2 hover:bg-gray-100">{t.change_password}</Link>
+                    </>
+                  )}
+                  {profile.role === 'admin' && (
+                    <>
+                      <Link href="/admin/" className="block px-4 py-2 hover:bg-gray-100">Trang quản trị</Link>
+                      <Link href="/admin/khach-hang" className="block px-4 py-2 hover:bg-gray-100">Quản lý người dùng</Link>
+                      <Link href="/admin/chuyen-gia" className="block px-4 py-2 hover:bg-gray-100">Quản lý chuyên gia</Link>
+                    </>
+                  )}
+                  <button onClick={logout} className="w-full text-left px-4 py-2 hover:bg-gray-100">{t.logout}</button>
                 </div>
               )}
             </div>
           ) : (
             <button
-              onClick={() => (window.location.href = '/taikhoan/dangnhap')}
+              onClick={() => (window.location.href = '/tai-khoan/dang-nhap')}
               className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition-colors"
             >
               {t.start}
@@ -201,9 +249,27 @@ export default function Header() {
             )}
             <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>{t.careers}</Link>
 
-            {isLoggedIn && client ? (
+            {isLoggedIn && profile ? (
               <>
-                <Link href="/ho-so/thong-tin" onClick={() => setMobileMenuOpen(false)}>{t.profile}</Link>
+                {profile.role === 'client' && (
+                  <>
+                    <Link href="/ho-so/thong-tin" onClick={() => setMobileMenuOpen(false)}>{t.profile}</Link>
+                    <Link href="/ho-so/nhat-ky" onClick={() => setMobileMenuOpen(false)}>{t.emotional_diary}</Link>
+                    <Link href="/ho-so/doi-mat-khau" onClick={() => setMobileMenuOpen(false)}>{t.change_password}</Link>
+                  </>
+                )}
+                {profile.role === 'expert' && (
+                  <>
+                    <Link href="/chuyen-gia/lich" onClick={() => setMobileMenuOpen(false)}>Lịch tư vấn</Link>
+                    <Link href="/chuyen-gia/doi-mat-khau" onClick={() => setMobileMenuOpen(false)}>{t.change_password}</Link>
+                  </>
+                )}
+                {profile.role === 'admin' && (
+                  <>
+                    <Link href="/admin/dashboard" onClick={() => setMobileMenuOpen(false)}>Trang quản trị</Link>
+                    <Link href="/admin/quan-ly-nguoi-dung" onClick={() => setMobileMenuOpen(false)}>Quản lý người dùng</Link>
+                  </>
+                )}
                 <button onClick={logout} className="text-left">{t.logout}</button>
               </>
             ) : (

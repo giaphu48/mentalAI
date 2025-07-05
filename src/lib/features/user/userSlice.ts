@@ -18,11 +18,13 @@ const userSlice = createSlice({
     loginSuccess: (
       state,
       action: PayloadAction<{
+        id: string;
         name: string;
-        token: string;
         phone: string;
         email: string;
-        id: string;
+        role: string;
+        token: string;
+        profile:any;
       }>
     ) => {
       state.isError = false;

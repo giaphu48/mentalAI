@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/hooks/useAppDispatch';
 import axiosInstance from '@/helpers/api/config';
 import { useLanguage } from '@/context/languageContext';
+import Cookies from 'js-cookie';
 
 const TEXT = {
   vi: {
@@ -16,6 +17,7 @@ const TEXT = {
     success: 'Đổi mật khẩu thành công',
     error: 'Có lỗi xảy ra',
     mismatch: 'Mật khẩu xác nhận không khớp',
+    unauthorized: 'Chưa xác thực'
   },
   en: {
     title: 'CHANGE PASSWORD',
@@ -26,6 +28,7 @@ const TEXT = {
     success: 'Password changed successfully',
     error: 'An error occurred',
     mismatch: 'Password confirmation does not match',
+    unauthorized: 'Unauthorized'
   },
 };
 
@@ -114,12 +117,12 @@ const ChangePasswordPage: React.FC = () => {
         {error && <div className="text-red-600">{error}</div>}
         {success && <div className="text-green-600">{success}</div>}
         <div className='flex justify-center'>
-        <button
-          type="submit"
-          className=" bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          {t.submit}
-        </button>
+          <button
+            type="submit"
+            className=" bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            {t.submit}
+          </button>
         </div>
       </form>
     </div>

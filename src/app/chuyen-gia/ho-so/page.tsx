@@ -58,7 +58,7 @@ const TEXT = {
   },
 };
 
-export default function ThongTinPage() {
+export default function ExpertProfilePage() {
   const { language } = useLanguage();
   const t = TEXT[language];
 
@@ -69,6 +69,7 @@ export default function ThongTinPage() {
     name: '',
     email: '',
     phone: '',
+    bio: '',
   });
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState('');
@@ -76,7 +77,8 @@ export default function ThongTinPage() {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [birthday, setBirthday] = useState<string>('');
   const [gender, setGender] = useState<string>('');
-
+  const [certification, setCertification] = useState<string>('');
+  const [bio, setBio] = useState<string>('');
   const avatarSrc = avatar || user?.profile?.avatar || '/image/user.jpg';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,15 +91,18 @@ export default function ThongTinPage() {
     setUserId(user.id);
     setLoading(true);
     try {
-      const res = await axiosInstance.get(`/clients/getbyid/${user.id}`);
+      const res = await axiosInstance.get(`/experts/getbyid/${user.id}`);
       setForm({
         avatar: res.data.avatar || user.profile?.avatar || '/image/user.jpg',
         name: res.data.name || '',
         email: res.data.email !== 'none' ? user.email : '',
-        phone: res.data.phone
+        phone: res.data.phone,
+        bio: res.data.bio
       });
       setGender(res.data.gender || '');
       setBirthday(formatDateToInput(res.data.dob));
+      setCertification(res.data.certification);
+      setBio(res.data.bio);
       setAvatar(res.data.avatar || user.profile?.avatar || '/image/user.jpg');
     } catch (error: any) {
       console.error(error);
@@ -125,12 +130,14 @@ export default function ThongTinPage() {
         return;
       }
 
-      await axiosInstance.put(`/clients/${userId}`, {
+      await axiosInstance.put(`/experts/${userId}`, {
         name: form.name,
         email: form.email,
         phone: form.phone,
         gender,
+        certification,
         dob: birthday,
+        bio: form.bio
       });
       setEditing(false);
       setMessage(t.success);
@@ -157,7 +164,7 @@ export default function ThongTinPage() {
           return;
         }
 
-        const res = await axiosInstance.post(`/clients/${userId}/avatar`, formData, {
+        const res = await axiosInstance.post(`/experts/${userId}/avatar`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
 
@@ -258,6 +265,23 @@ export default function ThongTinPage() {
         </div>
 
         <div>
+          <label className="block mb-1 font-medium">Bằng cấp</label>
+          <select
+            name="certification"
+            value={certification}
+            onChange={e => setCertification(e.target.value)}
+            disabled={!editing}
+            className="w-full border px-3 py-2 rounded"
+            required
+          >
+            <option value="">Chọn bằng cấp</option>
+            <option value="bachelor">Cử nhân</option>
+            <option value="master">Thạc sĩ</option>
+            <option value="phd">Tiến sĩ</option>
+          </select>
+        </div>
+
+        <div>
           <label className="block mb-1 font-medium">{t.birthday}</label>
           <input
             type="date"
@@ -269,6 +293,21 @@ export default function ThongTinPage() {
             required
           />
         </div>
+
+        <div>
+          <label className="block mb-1 font-medium">Bio</label>
+          <textarea
+            name="bio"
+            value={form.bio || ''}
+            onChange={e => setForm({ ...form, bio: e.target.value })}
+            disabled={!editing}
+            className="w-full border px-3 py-2 rounded"
+            rows={3}
+            placeholder="Nhập mô tả ngắn về bản thân"
+          />
+        </div>
+
+
 
         <div className="flex justify-center">
           {editing ? (

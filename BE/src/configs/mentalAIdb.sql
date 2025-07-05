@@ -70,7 +70,10 @@ CREATE TABLE chat_messages (
 CREATE TABLE expert_profiles (
     user_id CHAR(36) PRIMARY KEY,
     full_name VARCHAR(255),
+    avatar VARCHAR(255),
     certification TEXT,
+    gender ENUM('male', 'female', 'other'),
+    dob DATE;
     bio TEXT,
     approved_by_admin BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -60,7 +60,7 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await axiosInstance.post("clients/login", form);
+      const res = await axiosInstance.post("users/login", form);
       const { token, user } = res.data;
 
       if (user.is_verified) {

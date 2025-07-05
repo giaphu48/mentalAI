@@ -9,12 +9,10 @@ router.post('/login', controller.loginClient);
 router.get('/', controller.getClients);
 router.get('/getbyid/:id', controller.getClientById);
 router.get('/email/:email', controller.getIdByEmail);
-router.get('/me', controller.getMe);
 router.put('/verify/:id', controller.verifyClient);
 router.put('/:id', controller.updateClient);
 router.delete('/:id', controller.deleteClient);
 router.delete('/', controller.deleteAllClients);
-router.post('/change-password', auth, controller.changePassword);
 router.post('/:id/avatar', upload.single('avatar'), controller.uploadAvatar);
 
 

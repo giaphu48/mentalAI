@@ -36,7 +36,7 @@ const getClients = async (req, res) => {
   try {
     const [clients] = await db.query(`
       SELECT 
-        users.id, users.email, users.phone, users.is_verified,
+        users.id, users.email, users.phone, users.is_verified, users.role,
         client_profiles.name, client_profiles.dob, client_profiles.gender
       FROM users
       JOIN client_profiles ON users.id = client_profiles.user_id
@@ -98,6 +98,7 @@ const loginClient = async (req, res) => {
       {
         id: user.id,
         email: user.email,
+        phone: user.phone,
         role: user.role,
       },
       jwtSecret,
@@ -135,45 +136,6 @@ const loginClient = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi khi đăng nhập" });
-  }
-};
-
-const getMe = async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Không có token xác thực" });
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, jwtSecret);
-    } catch (err) {
-      return res.status(403).json({ message: "Token không hợp lệ" });
-    }
-
-    const userId = decoded.id;
-
-    const [users] = await db.query(
-      `SELECT 
-        users.id, users.email, users.phone, users.is_verified,
-        client_profiles.name, client_profiles.dob, client_profiles.gender, client_profiles.avatar
-      FROM users
-      JOIN client_profiles ON users.id = client_profiles.user_id
-      WHERE users.id = ? AND users.role = 'client'`,
-      [userId]
-    );
-
-    if (users.length === 0) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng" });
-    }
-
-    res.status(200).json(users[0]);
-  } catch (err) {
-    console.error("Lỗi getMe:", err);
-    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
@@ -254,8 +216,6 @@ const deleteAllClients = async (req, res) => {
 const updateClient = async (req, res) => {
   const { id } = req.params;
   const { email, phone, name, gender, dob, avatar } = req.body;
-
-  console.log(id, email, phone, name, gender, dob, avatar);
 
   try {
     // Update users table
@@ -340,7 +300,6 @@ module.exports = {
   createClient,
   getClients,
   getClientById,
-  getMe,
   deleteClient,
   deleteAllClients,
   loginClient,
