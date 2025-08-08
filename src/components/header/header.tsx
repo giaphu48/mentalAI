@@ -100,10 +100,6 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // const logout = () => {
-  //   localStorage.removeItem('token');
-  //   window.location.href = '/';
-  // };
   const logout = async() => {
     try {
       await axiosInstance.post('http://localhost:3025/users/logout', {}, {
@@ -118,187 +114,401 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white shadow-md">
-      <div className="flex items-center justify-between p-4">
-        {/* Logo */}
-        <div className="logo flex-shrink-0">
-          <Link href="/">
-            <img src="/image/logo.png" alt="Logo" width={120} height={70} />
-          </Link>
-        </div>
-
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex justify-center items-center space-x-4">
-          <Link href="/">{t.home}</Link>
-          <Link href="/">{t.about}</Link>
-          <div className="relative">
-            <button
-              aria-haspopup="true"
-              aria-expanded={serviceOpen}
-              onClick={() => setServiceOpen((prev) => !prev)}
-              type="button"
-              className="flex items-center space-x-1"
-            >
-              <span>{t.services}</span>
-              <ChevronDown className="w-3 h-4 ml-1" />
-            </button>
-            {serviceOpen && (
-              <div
-                ref={serviceDropdownRef}
-                className="absolute left-0 mt-2 w-56 bg-white border rounded shadow-lg z-20"
-              >
-                <Link href="/services/consulting" className="block px-4 py-2 hover:bg-gray-100" onClick={() => setServiceOpen(false)}>{t.consulting}</Link>
-                <Link href="/" className="block px-4 py-2 hover:bg-gray-100" onClick={() => setServiceOpen(false)}>{t.psychological_test}</Link>
-                <Link href="/" className="block px-4 py-2 hover:bg-gray-100" onClick={() => setServiceOpen(false)}>{t.appointment_with_experts}</Link>
-              </div>
-            )}
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link href="/" className="flex items-center">
+              <img 
+                src="/image/logo.png" 
+                alt="Logo" 
+                className="h-12 w-auto" 
+              />
+            </Link>
           </div>
-          <Link href="/contact">{t.careers}</Link>
-        </nav>
 
-        {/* Right - Desktop */}
-        <div className="hidden md:flex items-center space-x-4">
-          {isLoggedIn && profile ? (
-            <div className="relative">
-              <button className="flex items-center space-x-2" onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
-                <img src={avatarSrc} className="w-10 h-10 rounded-full border object-cover" />
-                <span className="text-sm font-medium">
-                  {profile.role === 'admin' ? 'Admin' : profile.name}
-                </span>
-                <ChevronDown className="w-4 h-4" />
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-8">
+            <Link 
+              href="/" 
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+            >
+              {t.home}
+            </Link>
+            
+            <Link 
+              href="/about" 
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+            >
+              {t.about}
+            </Link>
+            
+            <div className="relative" ref={serviceDropdownRef}>
+              <button
+                onClick={() => setServiceOpen(!serviceOpen)}
+                className="flex items-center text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              >
+                {t.services}
+                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${serviceOpen ? 'rotate-180' : ''}`} />
               </button>
-
-              {userDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-50">
-                  {profile.role === 'client' && (
-                    <>
-                      <Link href="/ho-so/thong-tin" className="block px-4 py-2 hover:bg-gray-100">{t.profile}</Link>
-                      <Link href="/ho-so/nhat-ky" className="block px-4 py-2 hover:bg-gray-100">{t.emotional_diary}</Link>
-                      <Link href="/ho-so/doi-mat-khau" className="block px-4 py-2 hover:bg-gray-100">{t.change_password}</Link>
-                    </>
-                  )}
-                  {profile.role === 'expert' && (
-                    <>
-                      <Link href="/chuyen-gia/ho-so" className="block px-4 py-2 hover:bg-gray-100">Hồ sơ</Link>
-                      <Link href="/chuyen-gia/lich" className="block px-4 py-2 hover:bg-gray-100">Lịch tư vấn</Link>
-                      <Link href="/chuyen-gia/doi-mat-khau" className="block px-4 py-2 hover:bg-gray-100">{t.change_password}</Link>
-                    </>
-                  )}
-                  {profile.role === 'admin' && (
-                    <>
-                      <Link href="/admin/" className="block px-4 py-2 hover:bg-gray-100">Trang quản trị</Link>
-                      <Link href="/admin/khach-hang" className="block px-4 py-2 hover:bg-gray-100">Quản lý người dùng</Link>
-                      <Link href="/admin/chuyen-gia" className="block px-4 py-2 hover:bg-gray-100">Quản lý chuyên gia</Link>
-                    </>
-                  )}
-                  <button onClick={logout} className="w-full text-left px-4 py-2 hover:bg-gray-100">{t.logout}</button>
+              
+              {serviceOpen && (
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
+                  <Link 
+                    href="/dich-vu/tu-van" 
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    onClick={() => setServiceOpen(false)}
+                  >
+                    {t.consulting}
+                  </Link>
+                  <Link 
+                    href="/psychological-test" 
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    onClick={() => setServiceOpen(false)}
+                  >
+                    {t.psychological_test}
+                  </Link>
+                  <Link 
+                    href="/appointment" 
+                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    onClick={() => setServiceOpen(false)}
+                  >
+                    {t.appointment_with_experts}
+                  </Link>
                 </div>
               )}
             </div>
-          ) : (
-            <button
-              onClick={() => (window.location.href = '/tai-khoan/dang-nhap')}
-              className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition-colors"
+            
+            <Link 
+              href="/careers" 
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
             >
-              {t.start}
-            </button>
-          )}
+              {t.careers}
+            </Link>
+          </nav>
 
-          {/* Language Switcher */}
-          <div className="relative">
-            <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 text-sm" onClick={() => setLangOpen((prev) => !prev)}>
-              <Globe className="w-4 h-4" />
-              <span>{t.languages[language]}</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            {langOpen && (
-              <ul className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-30">
-                <li>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100" onClick={() => { setLanguage('vi'); setLangOpen(false); }}>{MENU.vi.languages.vi}</button>
-                </li>
-                <li>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100" onClick={() => { setLanguage('en'); setLangOpen(false); }}>{MENU.vi.languages.en}</button>
-                </li>
-              </ul>
+          {/* Right Side - Desktop */}
+          <div className="hidden lg:flex items-center space-x-6">
+            {/* Language Switcher */}
+            <div className="relative">
+              <button 
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center text-gray-600 hover:text-blue-600"
+              >
+                <Globe className="w-5 h-5" />
+                <span className="ml-1 text-sm font-medium">{t.languages[language]}</span>
+              </button>
+              
+              {langOpen && (
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-50">
+                  <button 
+                    onClick={() => { setLanguage('vi'); setLangOpen(false); }}
+                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50"
+                  >
+                    {MENU.vi.languages.vi}
+                  </button>
+                  <button 
+                    onClick={() => { setLanguage('en'); setLangOpen(false); }}
+                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50"
+                  >
+                    {MENU.vi.languages.en}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* User Section */}
+            {isLoggedIn && profile ? (
+              <div className="relative">
+                <button 
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center space-x-2"
+                >
+                  <img 
+                    src={avatarSrc} 
+                    alt="User Avatar" 
+                    className="w-9 h-9 rounded-full object-cover border-2 border-blue-100"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {profile.role === 'admin' ? 'Admin' : profile.name}
+                  </span>
+                </button>
+                
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50">
+                    {profile.role === 'client' && (
+                      <>
+                        <Link 
+                          href="/ho-so/thong-tin" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        >
+                          {t.profile}
+                        </Link>
+                        <Link 
+                          href="/ho-so/nhat-ky" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        >
+                          {t.emotional_diary}
+                        </Link>
+                      </>
+                    )}
+                    {profile.role === 'expert' && (
+                      <>
+                        <Link 
+                          href="/chuyen-gia/ho-so" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        >
+                          Hồ sơ
+                        </Link>
+                        <Link 
+                          href="/chuyen-gia/lich" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        >
+                          Lịch tư vấn
+                        </Link>
+                      </>
+                    )}
+                    {profile.role === 'admin' && (
+                      <>
+                        <Link 
+                          href="/admin" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        >
+                          Trang quản trị
+                        </Link>
+                        <Link 
+                          href="/admin/khach-hang" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                        >
+                          Quản lý người dùng
+                        </Link>
+                      </>
+                    )}
+                    <Link 
+                      href={profile.role === 'client' 
+                        ? '/ho-so/doi-mat-khau' 
+                        : profile.role === 'expert' 
+                          ? '/chuyen-gia/doi-mat-khau' 
+                          : '/admin/doi-mat-khau'
+                      } 
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                    >
+                      {t.change_password}
+                    </Link>
+                    <button 
+                      onClick={logout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      {t.logout}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link 
+                href="/tai-khoan/dang-nhap" 
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                {t.start}
+              </Link>
             )}
           </div>
+
+          {/* Mobile Menu Button */}
+          <button 
+            className="lg:hidden p-2 text-gray-700 hover:text-blue-600"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
+          </button>
         </div>
 
-        {/* Mobile Hamburger */}
-        <button className="md:hidden flex items-center p-2" onClick={() => setMobileMenuOpen((prev) => !prev)} aria-label="Open menu">
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t shadow-lg px-4 pb-4 z-40">
-          <nav className="flex flex-col space-y-2 mt-2">
-            <Link href="/" onClick={() => setMobileMenuOpen(false)}>{t.home}</Link>
-            <Link href="/" onClick={() => setMobileMenuOpen(false)}>{t.about}</Link>
-            <button onClick={() => setServiceOpen((prev) => !prev)} className="flex items-center space-x-1">
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden mt-4 pb-4 space-y-3 border-t pt-4">
+            <Link 
+              href="/" 
+              className="block py-2 text-gray-700 hover:text-blue-600 font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t.home}
+            </Link>
+            
+            <Link 
+              href="/about" 
+              className="block py-2 text-gray-700 hover:text-blue-600 font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t.about}
+            </Link>
+            
+            <button 
+              onClick={() => setServiceOpen(!serviceOpen)}
+              className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-blue-600 font-medium"
+            >
               <span>{t.services}</span>
-              <ChevronDown className="w-3 h-4 ml-1" />
+              <ChevronDown className={`w-4 h-4 transition-transform ${serviceOpen ? 'rotate-180' : ''}`} />
             </button>
+            
             {serviceOpen && (
-              <div className="ml-4 mt-1 flex flex-col space-y-1">
-                <Link href="/services/consulting" onClick={() => setMobileMenuOpen(false)}>{t.consulting}</Link>
-                <Link href="/" onClick={() => setMobileMenuOpen(false)}>{t.psychological_test}</Link>
-                <Link href="/" onClick={() => setMobileMenuOpen(false)}>{t.appointment_with_experts}</Link>
+              <div className="ml-4 space-y-2 mt-1">
+                <Link 
+                  href="/dich-vu/tu-van" 
+                  className="block py-2 text-gray-600 hover:text-blue-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t.consulting}
+                </Link>
+                <Link 
+                  href="/psychological-test" 
+                  className="block py-2 text-gray-600 hover:text-blue-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t.psychological_test}
+                </Link>
+                <Link 
+                  href="/appointment" 
+                  className="block py-2 text-gray-600 hover:text-blue-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t.appointment_with_experts}
+                </Link>
               </div>
             )}
-            <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>{t.careers}</Link>
+            
+            <Link 
+              href="/careers" 
+              className="block py-2 text-gray-700 hover:text-blue-600 font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t.careers}
+            </Link>
 
+            {/* Mobile Language Switcher */}
+            <div className="pt-2 border-t mt-2">
+              <button 
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center text-gray-700 hover:text-blue-600"
+              >
+                <Globe className="w-5 h-5 mr-2" />
+                <span>{t.languages[language]}</span>
+              </button>
+              
+              {langOpen && (
+                <div className="ml-7 mt-1 space-y-1">
+                  <button 
+                    onClick={() => { setLanguage('vi'); setLangOpen(false); }}
+                    className="block w-full py-1 text-left text-gray-600 hover:text-blue-600"
+                  >
+                    {MENU.vi.languages.vi}
+                  </button>
+                  <button 
+                    onClick={() => { setLanguage('en'); setLangOpen(false); }}
+                    className="block w-full py-1 text-left text-gray-600 hover:text-blue-600"
+                  >
+                    {MENU.vi.languages.en}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile User Section */}
             {isLoggedIn && profile ? (
-              <>
+              <div className="pt-2 border-t mt-2 space-y-2">
                 {profile.role === 'client' && (
                   <>
-                    <Link href="/ho-so/thong-tin" onClick={() => setMobileMenuOpen(false)}>{t.profile}</Link>
-                    <Link href="/ho-so/nhat-ky" onClick={() => setMobileMenuOpen(false)}>{t.emotional_diary}</Link>
-                    <Link href="/ho-so/doi-mat-khau" onClick={() => setMobileMenuOpen(false)}>{t.change_password}</Link>
+                    <Link 
+                      href="/ho-so/thong-tin" 
+                      className="block py-2 text-gray-700 hover:text-blue-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {t.profile}
+                    </Link>
+                    <Link 
+                      href="/ho-so/nhat-ky" 
+                      className="block py-2 text-gray-700 hover:text-blue-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {t.emotional_diary}
+                    </Link>
                   </>
                 )}
                 {profile.role === 'expert' && (
                   <>
-                    <Link href="/chuyen-gia/lich" onClick={() => setMobileMenuOpen(false)}>Lịch tư vấn</Link>
-                    <Link href="/chuyen-gia/doi-mat-khau" onClick={() => setMobileMenuOpen(false)}>{t.change_password}</Link>
+                    <Link 
+                      href="/chuyen-gia/ho-so" 
+                      className="block py-2 text-gray-700 hover:text-blue-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Hồ sơ
+                    </Link>
+                    <Link 
+                      href="/chuyen-gia/lich" 
+                      className="block py-2 text-gray-700 hover:text-blue-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Lịch tư vấn
+                    </Link>
                   </>
                 )}
                 {profile.role === 'admin' && (
                   <>
-                    <Link href="/admin/dashboard" onClick={() => setMobileMenuOpen(false)}>Trang quản trị</Link>
-                    <Link href="/admin/quan-ly-nguoi-dung" onClick={() => setMobileMenuOpen(false)}>Quản lý người dùng</Link>
+                    <Link 
+                      href="/admin" 
+                      className="block py-2 text-gray-700 hover:text-blue-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Trang quản trị
+                    </Link>
+                    <Link 
+                      href="/admin/khach-hang" 
+                      className="block py-2 text-gray-700 hover:text-blue-600"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Quản lý người dùng
+                    </Link>
                   </>
                 )}
-                <button onClick={logout} className="text-left">{t.logout}</button>
-              </>
+                <Link 
+                  href={
+                    profile.role === 'client' 
+                      ? '/ho-so/doi-mat-khau' 
+                      : profile.role === 'expert' 
+                        ? '/chuyen-gia/doi-mat-khau' 
+                        : '/admin/doi-mat-khau'
+                  } 
+                  className="block py-2 text-gray-700 hover:text-blue-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t.change_password}
+                </Link>
+                <button 
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-red-600 hover:text-red-800 py-2"
+                >
+                  {t.logout}
+                </button>
+              </div>
             ) : (
-              <button onClick={() => { setMobileMenuOpen(false); window.location.href = '/taikhoan/dangnhap'; }} className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 mt-2">
+              <Link 
+                href="/tai-khoan/dang-nhap" 
+                className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-lg mt-3 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 {t.start}
-              </button>
+              </Link>
             )}
-
-            {/* Mobile Language Switcher */}
-            <div className="relative mt-2">
-              <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600 text-sm w-full" onClick={() => setLangOpen((prev) => !prev)}>
-                <Globe className="w-4 h-4" />
-                <span>{t.languages[language]}</span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              {langOpen && (
-                <ul className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-30">
-                  <li>
-                    <button className="w-full text-left px-4 py-2 hover:bg-gray-100" onClick={() => { setLanguage('vi'); setLangOpen(false); setMobileMenuOpen(false); }}>{MENU.vi.languages.vi}</button>
-                  </li>
-                  <li>
-                    <button className="w-full text-left px-4 py-2 hover:bg-gray-100" onClick={() => { setLanguage('en'); setLangOpen(false); setMobileMenuOpen(false); }}>{MENU.vi.languages.en}</button>
-                  </li>
-                </ul>
-              )}
-            </div>
-          </nav>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </header>
   );
 }

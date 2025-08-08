@@ -6,7 +6,7 @@ import axiosInstance from '@/helpers/api/config';
 
 type Expert = {
   id: string;
-  full_name: string;
+  name: string;
   email: string;
   phone: string;
   certification: string;
@@ -59,7 +59,7 @@ const ExpertManagementPage = () => {
               {experts.map((expert) => (
                 <tr key={expert.id} className="hover:bg-gray-50">
                   <td className="border px-4 py-2">{getSerialNumber(experts.findIndex(u => u.id === expert.id))}</td>
-                  <td className="border px-4 py-2">{expert.full_name}</td>
+                  <td className="border px-4 py-2">{expert.name}</td>
                   <td className="border px-4 py-2">{expert.email}</td>
                   <td className="border px-4 py-2">{expert.phone}</td>
                   <td className="border px-4 py-2">{expert.certification}</td>

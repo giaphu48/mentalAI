@@ -123,7 +123,7 @@ const OTPModal: React.FC<OTPModalProps> = ({ isOpen, onClose, email }) => {
                 setOtp('');
                 setSentOtp('');
                 onClose();
-                router.push('/taikhoan/dangnhap'); // Chuyển hướng đến trang đăng nhập
+                router.push('/tai-khoan/dang-nhap'); // Chuyển hướng đến trang đăng nhập
             } catch (err) {
                 setError('Lỗi khi cập nhật trạng thái xác thực!');
             }

@@ -3,10 +3,10 @@ import Header from '@/components/header/header';
 import { LanguageProvider } from '../context/languageContext';
 import { Providers } from '@/lib/Providers';
 
-export const metadata = {
-  title: 'My App',
-  description: 'AI Tư vấn tâm lý',
-};
+// export const metadata = {
+//   title: 'MentalAI',
+//   description: 'AI Tư vấn tâm lý',
+// };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

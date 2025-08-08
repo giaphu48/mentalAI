@@ -5,8 +5,8 @@ const port = 3025;
 const cookieParser = require('cookie-parser');
 const clientRoutes = require('./src/routes/clientRoute');
 const expertRoutes = require('./src/routes/expertRoute');
-const userRoutes = require('./src/routes/userRoute')
-
+const userRoutes = require('./src/routes/userRoute');
+const chatRoutes = require('./src/routes/chatRoute');
 app.use(express.json());  // Để đọc JSON body
 app.use(cookieParser());
 
@@ -19,6 +19,7 @@ app.use(cors({
 app.use('/clients', clientRoutes); // Gắn routes
 app.use('/experts', expertRoutes);
 app.use('/users', userRoutes);
+app.use('/chats', chatRoutes);
 
 app.listen(port, () => {
   console.log(`Server đang chạy tại http://localhost:${port}`);
