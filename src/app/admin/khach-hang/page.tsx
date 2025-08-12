@@ -12,11 +12,23 @@ type User = {
   role: string;
 };
 
-const getSerialNumber = (index: number) => index + 1;
+
 
 const ClientManagementPage = () => {
 
     const [users, setUsers] = useState<User[]>([]);
+    const getSerialNumber = (index: number) => index + 1;
+
+    const handleDelete = async (id: string) => {
+        if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+            try {
+                await axiosInstance.delete(`/clients/${id}`);
+                setUsers(users.filter(user => user.id !== id));
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    };
 
     useEffect(() => {
     const fetchUser = async () => {
@@ -63,20 +75,17 @@ const ClientManagementPage = () => {
                   <td className="border px-4 py-2">{user.role}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <Link
-                      href={`/admin/taikhoan/sua/id=${user.id}`}
+                      href={`/admin/khach-hang/${user.id}`}
                       className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
                     >
                       Sửa
                     </Link>
-                    <Link
-                      href={`/admin/taikhoan/xoa/id=${user.id}`}
-                      onClick={(e) => {
-                        if (!confirm('Bạn có thật sự muốn xóa ?')) e.preventDefault();
-                      }}
+                    <button
+                      onClick={() => handleDelete(user.id)}
                       className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
                     >
                       Xóa
-                    </Link>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -92,7 +101,7 @@ const ClientManagementPage = () => {
         </div>
         <div className="p-6">
           <Link
-            href="/admin/taikhoan/them"
+            href="/admin/khach-hang/them"
             className="bg-cyan-600 text-white px-4 py-2 rounded hover:bg-cyan-700"
           >
             Thêm Tài khoản

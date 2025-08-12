@@ -3,15 +3,42 @@ const db = require("../configs/db");
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const dotenv = require("dotenv");
+const { create } = require("domain");
 dotenv.config();
 const jwtSecret = process.env.DB_TOKEN_SECRET || "default_secret_key";
+
+const createExpert = async (req, res) => {
+  const { email, phone, password_hash, name } = req.body;
+  const id = uuidv4();
+
+  try {
+    const password = await bcrypt.hash(password_hash, 10);
+
+    // 1. Thêm vào bảng users
+    await db.query(
+      `INSERT INTO users (id, email, phone, password_hash, role, is_verified) VALUES (?, ?, ?, ?, 'expert', true)`,
+      [id, email, phone, password]
+    );
+
+    // 2. Thêm vào bảng expert_profiles
+    await db.query(
+      `INSERT INTO expert_profiles (user_id, name, approved_by_admin) VALUES (?, ?, true)`,
+      [id, name]
+    );
+
+    res.status(201).json({ message: "Đăng ký expert thành công", id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi khi đăng ký expert" });
+  }
+};
 
 const getAllExpert = async(req,res) => {
     try{
         const[experts] = await db.query(
             `SELECT
                 users.id, users.email, users.phone, users.role,
-                expert_profiles.user_id, expert_profiles.name, expert_profiles.certification
+                expert_profiles.user_id, expert_profiles.name, expert_profiles.certification, expert_profiles.avatar
             FROM users
             JOIN expert_profiles ON users.id = expert_profiles.user_id
             WHERE role = 'expert'
@@ -105,9 +132,28 @@ const uploadAvatar = async (req, res) => {
   }
 };
 
+const deleteExpert = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Xóa profile expert trước (nếu có ràng buộc khóa ngoại)
+    await db.query(`DELETE FROM expert_profiles WHERE user_id = ?`, [id]);
+
+    // Xóa user
+    await db.query(`DELETE FROM users WHERE id = ? AND role = 'expert'`, [id]);
+
+    res.json({ message: "Xóa expert thành công" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi khi xóa expert" });
+  }
+};
+
 module.exports = {
+    createExpert,
     getAllExpert,
     getExpertById,
     updateExpert,
-    uploadAvatar
+    uploadAvatar,
+    deleteExpert
 }

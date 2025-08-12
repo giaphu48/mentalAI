@@ -13,24 +13,37 @@ type Expert = {
   role: string;
 };
 
-const getSerialNumber = (index: number) => index + 1;
+
+
 
 const ExpertManagementPage = () => {
 
-  const [experts, setExpert] = useState<Expert[]>([]);
+  const [experts, setExperts] = useState<Expert[]>([]);
+  const getSerialNumber = (index: number) => index + 1;
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Bạn có chắc chắn muốn xóa chuyên gia này?')) {
+      try {
+        await axiosInstance.delete(`/experts/${id}`);
+        setExperts(experts.filter(expert => expert.id !== id));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   useEffect(() => {
-    const fetchExperts = async() => {
-        try{
-          const res = await axiosInstance.get(`/experts/`);
-          setExpert(res.data);
-        }
-        catch(err){
-          console.error(err);
-        }
+    const fetchExperts = async () => {
+      try {
+        const res = await axiosInstance.get(`/experts/`);
+        setExperts(res.data);
+      }
+      catch (err) {
+        console.error(err);
+      }
     }
     fetchExperts();
-  },[]);
+  }, []);
 
   return (
     <div className="p-6">
@@ -66,20 +79,17 @@ const ExpertManagementPage = () => {
                   <td className="border px-4 py-2">{expert.role}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <Link
-                      href={`/admin/taikhoan/sua/id=${expert.id}`}
+                      href={`/admin/chuyen-gia/${expert.id}`}
                       className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
                     >
                       Sửa
                     </Link>
-                    <Link
-                      href={`/admin/taikhoan/xoa/id=${expert.id}`}
-                      onClick={(e) => {
-                        if (!confirm('Bạn có thật sự muốn xóa ?')) e.preventDefault();
-                      }}
+                    <button
+                      onClick={() => handleDelete(expert.id)}
                       className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
                     >
                       Xóa
-                    </Link>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -95,7 +105,7 @@ const ExpertManagementPage = () => {
         </div>
         <div className="p-6">
           <Link
-            href="/admin/taikhoan/them"
+            href="/admin/chuyen-gia/them"
             className="bg-cyan-600 text-white px-4 py-2 rounded hover:bg-cyan-700"
           >
             Thêm Tài khoản

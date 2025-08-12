@@ -150,9 +150,29 @@ const changePassword = async (req, res) => {
   }
 };
 
+const changePasswordAdmin = async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  try {
+    const user = await findUserById(id);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await updatePassword(id, hashedNewPassword);
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+};
+
 module.exports = {
   userLogin,
   logout,
   getMe,
-  changePassword
+  changePassword,
+  changePasswordAdmin
 };

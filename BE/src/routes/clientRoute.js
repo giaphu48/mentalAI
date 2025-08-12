@@ -5,6 +5,7 @@ const auth = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
 router.post('/register', controller.createClient);
+router.post('/register-admin', controller.createClientAdmin);
 router.post('/login', controller.loginClient);
 router.get('/', controller.getClients);
 router.get('/getbyid/:id', controller.getClientById);
@@ -14,6 +15,7 @@ router.put('/:id', controller.updateClient);
 router.delete('/:id', controller.deleteClient);
 router.delete('/', controller.deleteAllClients);
 router.post('/:id/avatar', upload.single('avatar'), controller.uploadAvatar);
+router.get('/emotion-diaries/:client_id', controller.getEmotionDiariesByClientId);
 
 
 module.exports = router;

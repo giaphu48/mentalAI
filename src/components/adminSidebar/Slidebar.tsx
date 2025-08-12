@@ -49,6 +49,7 @@ const Sidebar = () => {
       <SidebarItem href="/admin" icon={<FaHome />} text={t.home} />
       <SidebarItem href="/admin/khach-hang" icon={<FaUsers />} text={t.customer} />
       <SidebarItem href="/admin/chuyen-gia" icon={<FaUser/>} text={t.expert}/> 
+      <SidebarItem href="/admin/blogs" icon={<FaUser/>} text='Quản lý Blog'/> 
 
       {/* Toggle button placeholder (optional expand/collapse) */}
       {/* <div className="hidden md:flex justify-center mt-6">

@@ -14,7 +14,7 @@ const MENU = {
     password: "Đổi mật khẩu",
     emotional_diaries: "Nhật ký cảm xúc",
     profile: "Hồ sơ",
-    schedule: "Lịch tư vấn",
+    schedule: "Yêu cầu tư vấn",
     change_password: "Đổi mật khẩu"
   },
   en: {
@@ -22,7 +22,7 @@ const MENU = {
     password: "Change Password",
     emotional_diaries: "Emotional diaries",
     profile: "Profile",
-    schedule: "Consultation Schedule",
+    schedule: "Consultation Requests",
     change_password: "Change Password"
   },
 };
@@ -39,7 +39,7 @@ export default function ProfileSidebar() {
     user?.role === "expert"
       ? [
         { label: t.profile, href: "/chuyen-gia/ho-so" },
-        { label: t.schedule, href: "/chuyen-gia/lich" },
+        { label: t.schedule, href: "/chuyen-gia/yeu-cau-tu-van" },
         { label: t.change_password, href: "/chuyen-gia/doi-mat-khau" },
       ]
       : [

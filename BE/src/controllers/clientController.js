@@ -32,6 +32,32 @@ const createClient = async (req, res) => {
   }
 };
 
+const createClientAdmin = async (req, res) => {
+  const { email, phone, password_hash, name } = req.body;
+  const id = uuidv4();
+
+  try {
+    const password = await bcrypt.hash(password_hash, 10);
+
+    // 1. Thêm vào bảng users
+    await db.query(
+      `INSERT INTO users (id, email, phone, password_hash, role, is_verified) VALUES (?, ?, ?, ?, 'client', true)`,
+      [id, email, phone, password]
+    );
+
+    // 2. Thêm vào bảng client_profiles
+    await db.query(
+      `INSERT INTO client_profiles (user_id, name) VALUES (?, ?)`,
+      [id, name]
+    );
+
+    res.status(201).json({ message: "Đăng ký client thành công", id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi khi đăng ký client" });
+  }
+};
+
 const getClients = async (req, res) => {
   try {
     const [clients] = await db.query(`
@@ -296,8 +322,25 @@ const uploadAvatar = async (req, res) => {
   }
 };
 
+const getEmotionDiariesByClientId = async (req, res) => {
+  const { client_id } = req.params;
+
+  try {
+    const [diaries] = await db.query(
+      `SELECT * FROM emotion_diaries WHERE client_id = ? ORDER BY entry_date DESC`,
+      [client_id]
+    );
+
+    res.status(200).json(diaries);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi khi lấy nhật ký cảm xúc" });
+  }
+};
+
 module.exports = {
   createClient,
+  createClientAdmin,
   getClients,
   getClientById,
   deleteClient,
@@ -308,4 +351,5 @@ module.exports = {
   updateClient,
   changePassword,
   uploadAvatar,
+  getEmotionDiariesByClientId
 };

@@ -46,10 +46,18 @@ async function saveMessage(sessionId, sender, message) {
 
 async function getChatHistory(sessionId, limit = 100) {
   const [rows] = await db.query(
-    `SELECT id, sender, message, created_at 
-     FROM chat_messages 
-     WHERE session_id = ? 
-     ORDER BY created_at ASC 
+    `SELECT 
+        m.id, 
+        m.sender, 
+        m.message, 
+        m.created_at, 
+        s.session_type,
+        s.session_name
+     FROM chat_messages AS m
+     JOIN chat_sessions AS s 
+       ON m.session_id = s.id
+     WHERE m.session_id = ? 
+     ORDER BY m.created_at ASC 
      LIMIT ?`,
     [sessionId, limit]
   );
@@ -59,18 +67,37 @@ async function getChatHistory(sessionId, limit = 100) {
     sender: row.sender,
     message: row.message,
     created_at: row.created_at,
+    session_name: row.session_name,
+    session_type: row.session_type,
   }));
 }
 
+
 async function getChatSessionsByUserId(userId) {
   const [rows] = await db.query(
-    `SELECT id, session_name, start_time, session_type, updated_at, last_message
-     FROM chat_sessions
-     WHERE client_id = ?
-     ORDER BY start_time DESC`,
-    [userId]
+    `SELECT cs.id,
+            cs.session_name,
+            cs.start_time,
+            cs.session_type,
+            cs.updated_at,
+            cs.last_message,
+            cp.name AS client_name
+     FROM chat_sessions cs
+     LEFT JOIN client_profiles cp 
+       ON cs.client_id = cp.user_id
+     WHERE cs.client_id = ? OR cs.expert_id = ?
+     ORDER BY cs.start_time DESC`,
+    [userId, userId]
   );
   return rows;
+}
+
+async function saveEmotionDiary(sessionId, emotion, behavior, advise) {
+  const query = `
+    INSERT INTO emotion_diaries (session_id, emotion, behavior, advise, created_at)
+    VALUES (?, ?, ?, ?, NOW())
+  `;
+  await db.execute(query, [sessionId, emotion, behavior, advise]);
 }
 
 module.exports = {
@@ -78,4 +105,5 @@ module.exports = {
   saveMessage,
   getChatHistory,
   getChatSessionsByUserId,
+  findSessionById,
 };

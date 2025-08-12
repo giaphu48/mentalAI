@@ -1,117 +1,176 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/hooks/useAppDispatch';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import axiosInstance from '@/helpers/api/config';
-import { ChevronDown, Globe, Menu, X } from 'lucide-react';
+import { Bell, Menu, X } from 'lucide-react';
 import '../../styles/global.css';
-import { useLanguage } from '@/context/languageContext';
-
-const MENU = {
-  vi: {
-    home: 'Trang chủ',
-    about: 'Giới thiệu',
-    services: 'Dịch vụ',
-    consulting: 'Tư vấn tâm lý cùng AI',
-    psychological_test: 'Trắc nghiệm tâm lý',
-    emotional_diary: 'Nhật ký cảm xúc',
-    appointment_with_experts: 'Đặt lịch hẹn với chuyên gia',
-    careers: 'Tuyển dụng',
-    start: 'Bắt đầu',
-    profile: 'Hồ sơ',
-    change_password: 'Đổi mật khẩu',
-    logout: 'Đăng xuất',
-    languages: {
-      vi: 'Tiếng Việt',
-      en: 'English',
-    },
-  },
-  en: {
-    home: 'Home',
-    about: 'About',
-    services: 'Services',
-    consulting: 'Consulting',
-    psychological_test: 'Psychological Test',
-    emotional_diary: 'Emotional Diary',
-    appointment_with_experts: 'Appointment with Experts',
-    careers: 'Careers',
-    start: 'Get Started',
-    profile: 'Profile',
-    change_password: 'Change Password',
-    logout: 'Logout',
-    languages: {
-      vi: 'Vietnamese',
-      en: 'English',
-    },
-  },
-};
 
 interface Client {
   id: string;
   name: string;
   avatar?: string;
   gender: string;
-  dob: Date;
+  dob: Date | string;
 }
 
 interface UserProfile extends Client {
   role: 'client' | 'expert' | 'admin';
 }
 
+interface Notification {
+  id: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export default function Header() {
-  const user = useSelector((state: RootState) => state.user.currentUser) || null;
-  const [langOpen, setLangOpen] = useState(false);
+
+  // UI state
   const [serviceOpen, setServiceOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const serviceDropdownRef = useRef<HTMLDivElement>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  // Data state
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { language, setLanguage } = useLanguage();
-  type Language = keyof typeof MENU;
-  const t = MENU[language as Language];
-  const avatarSrc = profile?.role === 'admin'
-    ? '/image/user.jpg'
-    : profile?.avatar || '/image/user.jpg';
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Refs for outside-click handling
+  const serviceRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
+
+  const isLoggedIn = !!profile;
+
+  const avatarSrc = useMemo(() => {
+    if (!profile) return '/image/user.jpg';
+    return profile.role === 'admin' ? '/image/user.jpg' : profile.avatar || '/image/user.jpg';
+  }, [profile]);
+
+  const unreadCount = useMemo(() => notifications.filter(n => !n.is_read).length, [notifications]);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      if (!user || !user.role) return;
+    const ac = new AbortController();
+    (async () => {
       try {
-        const res = await axiosInstance.get('/users/me');
-        setProfile({ ...res.data, role: user.role });
-        setIsLoggedIn(true);
+        const res = await axiosInstance.get('/users/me', { signal: ac.signal });
+        setProfile(res.data);
       } catch (err) {
-        console.error('❌ Error fetching user profile:', err);
+        setProfile(null);
+        if (!(err instanceof DOMException && err.name === 'AbortError')) {
+          console.error('❌ Error fetching user profile:', err);
+        }
       }
-    };
-    fetchUser();
-  }, [user]);
+    })();
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (serviceDropdownRef.current && !serviceDropdownRef.current.contains(e.target as Node)) {
-        setServiceOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => ac.abort();
   }, []);
 
-  const logout = async() => {
+  useEffect(() => {
+    if (!profile) return;
+    let interval: number | undefined;
+    const ac = new AbortController();
+
+    const fetchNotifications = async () => {
+      try {
+        const userId = profile.id;
+        if (!userId) return;
+        const res = await axiosInstance.get(`/notifications/${userId}`, { signal: ac.signal });
+        setNotifications(res.data || []);
+      } catch (err) {
+        if (!(err instanceof DOMException && err.name === 'AbortError')) {
+          console.error('❌ Error fetching notifications:', err);
+        }
+      }
+    };
+
+    fetchNotifications();
+    // light polling for freshness
+    interval = window.setInterval(fetchNotifications, 60_000);
+
+    return () => {
+      ac.abort();
+      if (interval) window.clearInterval(interval);
+    };
+  }, [profile]);
+
+  // Close menus on outside click or Escape
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (serviceRef.current && !serviceRef.current.contains(target)) setServiceOpen(false);
+      if (notifRef.current && !notifRef.current.contains(target)) setNotifOpen(false);
+      if (userRef.current && !userRef.current.contains(target)) setUserDropdownOpen(false);
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setServiceOpen(false);
+        setNotifOpen(false);
+        setUserDropdownOpen(false);
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  // Open one menu should close others (desktop)
+  const toggleService = useCallback(() => {
+    setServiceOpen(v => {
+      const next = !v;
+      if (next) {
+        setNotifOpen(false);
+        setUserDropdownOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleNotif = useCallback(() => {
+    setNotifOpen(v => {
+      const next = !v;
+      if (next) {
+        setServiceOpen(false);
+        setUserDropdownOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleUser = useCallback(() => {
+    setUserDropdownOpen(v => {
+      const next = !v;
+      if (next) {
+        setServiceOpen(false);
+        setNotifOpen(false);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleMobile = useCallback(() => setMobileMenuOpen(v => !v), []);
+
+  const logout = useCallback(async () => {
     try {
-      await axiosInstance.post('http://localhost:3025/users/logout', {}, {
-        withCredentials: true
-      });
-      window.location.reload();
+      await axiosInstance.post('/users/logout', {}, { withCredentials: true });
+      // Clear persisted states if any
       localStorage.removeItem('persist:root');
+      localStorage.removeItem('user');
+      // Hard reload to reset client state
+      window.location.assign('/');
+    } catch (err) {
+      console.error('❌ Logout failed:', err);
     }
-    catch(err){
-      console.error(err);
-    }
-  }
+  }, []);
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -119,391 +178,196 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center">
-              <img 
-                src="/image/logo.png" 
-                alt="Logo" 
-                className="h-12 w-auto" 
-              />
+            <Link href="/" className="flex items-center" aria-label="Trang chủ">
+              <Image src="/image/logo.png" alt="Logo" width={160} height={48} priority className="h-12 w-auto" />
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8">
-            <Link 
-              href="/" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              {t.home}
-            </Link>
-            
-            <Link 
-              href="/about" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              {t.about}
-            </Link>
-            
-            <div className="relative" ref={serviceDropdownRef}>
+          <nav className="hidden lg:flex items-center gap-8" aria-label="Chính">
+            <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium">Trang chủ</Link>
+            <Link href="/gioi-thieu" className="text-gray-700 hover:text-blue-600 font-medium">Giới thiệu</Link>
+
+            <div className="relative" ref={serviceRef}>
               <button
-                onClick={() => setServiceOpen(!serviceOpen)}
-                className="flex items-center text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                onClick={toggleService}
+                className="flex items-center text-gray-700 hover:text-blue-600 font-medium"
+                aria-haspopup="menu"
+                aria-expanded={serviceOpen}
+                aria-controls="services-menu"
               >
-                {t.services}
-                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${serviceOpen ? 'rotate-180' : ''}`} />
+                Dịch vụ
               </button>
-              
+
               {serviceOpen && (
-                <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
-                  <Link 
-                    href="/dich-vu/tu-van" 
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                    onClick={() => setServiceOpen(false)}
-                  >
-                    {t.consulting}
+                <div
+                  id="services-menu"
+                  role="menu"
+                  className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50"
+                >
+                  <Link href="/dich-vu/tu-van" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                    Tư vấn tâm lý cùng AI
                   </Link>
-                  <Link 
-                    href="/psychological-test" 
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                    onClick={() => setServiceOpen(false)}
-                  >
-                    {t.psychological_test}
+                  <Link href="/dich-vu/trac-nghiem-mbti/quiz" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                    Trắc nghiệm tâm lý
                   </Link>
-                  <Link 
-                    href="/appointment" 
-                    className="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                    onClick={() => setServiceOpen(false)}
-                  >
-                    {t.appointment_with_experts}
+                  <Link href="/dich-vu/yeu-cau-tu-van" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                    Yêu cầu chuyên gia tư vấn
+                  </Link>
+                  <Link href="/dich-vu/blog" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                    Blog chữa lành
                   </Link>
                 </div>
               )}
             </div>
-            
-            <Link 
-              href="/careers" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              {t.careers}
-            </Link>
+
+            <Link href="/tuyen-dung" className="text-gray-700 hover:text-blue-600 font-medium">Tuyển dụng</Link>
           </nav>
 
           {/* Right Side - Desktop */}
-          <div className="hidden lg:flex items-center space-x-6">
-            {/* Language Switcher */}
-            <div className="relative">
-              <button 
-                onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center text-gray-600 hover:text-blue-600"
-              >
-                <Globe className="w-5 h-5" />
-                <span className="ml-1 text-sm font-medium">{t.languages[language]}</span>
-              </button>
-              
-              {langOpen && (
-                <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-50">
-                  <button 
-                    onClick={() => { setLanguage('vi'); setLangOpen(false); }}
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50"
-                  >
-                    {MENU.vi.languages.vi}
-                  </button>
-                  <button 
-                    onClick={() => { setLanguage('en'); setLangOpen(false); }}
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50"
-                  >
-                    {MENU.vi.languages.en}
-                  </button>
-                </div>
-              )}
-            </div>
+          <div className="hidden lg:flex items-center gap-6">
+            {isLoggedIn && profile && (
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={toggleNotif}
+                  className="relative p-2 text-gray-600 hover:text-blue-600"
+                  aria-haspopup="menu"
+                  aria-expanded={notifOpen}
+                  aria-controls="notif-menu"
+                  aria-label="Thông báo"
+                >
+                  <Bell className="w-6 h-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 grid place-items-center rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div id="notif-menu" role="menu" className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
+                    {notifications.length > 0 ? (
+                      <div className="max-h-80 overflow-auto">
+                        {notifications.map((n) => (
+                          <div key={n.id} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b">
+                            {n.message}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500">Không có thông báo</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* User Section */}
             {isLoggedIn && profile ? (
-              <div className="relative">
-                <button 
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center space-x-2"
-                >
-                  <img 
-                    src={avatarSrc} 
-                    alt="User Avatar" 
-                    className="w-9 h-9 rounded-full object-cover border-2 border-blue-100"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    {profile.role === 'admin' ? 'Admin' : profile.name}
-                  </span>
+              <div className="relative" ref={userRef}>
+                <button onClick={toggleUser} className="flex items-center gap-2" aria-haspopup="menu" aria-expanded={userDropdownOpen} aria-controls="user-menu">
+                  <Image src={avatarSrc} alt="User Avatar" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-blue-100" />
+                  <span className="text-sm font-medium text-gray-700">{profile.role === 'admin' ? 'Admin' : profile.name}</span>
                 </button>
-                
+
                 {userDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50">
+                  <div id="user-menu" role="menu" className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50">
                     {profile.role === 'client' && (
                       <>
-                        <Link 
-                          href="/ho-so/thong-tin" 
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                        >
-                          {t.profile}
-                        </Link>
-                        <Link 
-                          href="/ho-so/nhat-ky" 
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                        >
-                          {t.emotional_diary}
-                        </Link>
+                        <Link href="/ho-so/thong-tin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Hồ sơ</Link>
+                        <Link href="/ho-so/nhat-ky" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Nhật ký cảm xúc</Link>
                       </>
                     )}
                     {profile.role === 'expert' && (
                       <>
-                        <Link 
-                          href="/chuyen-gia/ho-so" 
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                        >
-                          Hồ sơ
-                        </Link>
-                        <Link 
-                          href="/chuyen-gia/lich" 
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                        >
-                          Lịch tư vấn
-                        </Link>
+                        <Link href="/chuyen-gia/ho-so" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Hồ sơ</Link>
+                        <Link href="/chuyen-gia/yeu-cau-tu-van" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Yêu cầu tư vấn</Link>
                       </>
                     )}
                     {profile.role === 'admin' && (
                       <>
-                        <Link 
-                          href="/admin" 
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                        >
-                          Trang quản trị
-                        </Link>
-                        <Link 
-                          href="/admin/khach-hang" 
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                        >
-                          Quản lý người dùng
-                        </Link>
+                        <Link href="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Trang quản trị</Link>
+                        <Link href="/admin/khach-hang" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Quản lý người dùng</Link>
                       </>
                     )}
-                    <Link 
-                      href={profile.role === 'client' 
-                        ? '/ho-so/doi-mat-khau' 
-                        : profile.role === 'expert' 
-                          ? '/chuyen-gia/doi-mat-khau' 
-                          : '/admin/doi-mat-khau'
-                      } 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
-                    >
-                      {t.change_password}
-                    </Link>
-                    <button 
-                      onClick={logout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      {t.logout}
-                    </button>
+                    <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50" role="menuitem">Đăng xuất</button>
                   </div>
                 )}
               </div>
             ) : (
-              <Link 
-                href="/tai-khoan/dang-nhap" 
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                {t.start}
+              <Link href="/tai-khoan/dang-nhap" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                Bắt đầu
               </Link>
             )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             className="lg:hidden p-2 text-gray-700 hover:text-blue-600"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={toggleMobile}
+            aria-label="Mở/đóng menu"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
           >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden mt-4 pb-4 space-y-3 border-t pt-4">
-            <Link 
-              href="/" 
-              className="block py-2 text-gray-700 hover:text-blue-600 font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {t.home}
-            </Link>
-            
-            <Link 
-              href="/about" 
-              className="block py-2 text-gray-700 hover:text-blue-600 font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {t.about}
-            </Link>
-            
-            <button 
-              onClick={() => setServiceOpen(!serviceOpen)}
-              className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-blue-600 font-medium"
-            >
-              <span>{t.services}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${serviceOpen ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {serviceOpen && (
-              <div className="ml-4 space-y-2 mt-1">
-                <Link 
-                  href="/dich-vu/tu-van" 
-                  className="block py-2 text-gray-600 hover:text-blue-600"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t.consulting}
-                </Link>
-                <Link 
-                  href="/psychological-test" 
-                  className="block py-2 text-gray-600 hover:text-blue-600"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t.psychological_test}
-                </Link>
-                <Link 
-                  href="/appointment" 
-                  className="block py-2 text-gray-600 hover:text-blue-600"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t.appointment_with_experts}
-                </Link>
+          <div id="mobile-menu" className="lg:hidden mt-3 border-t pt-3 space-y-3">
+            <Link href="/" className="block text-gray-700 hover:text-blue-600 font-medium">Trang chủ</Link>
+            <Link href="/gioi-thieu" className="block text-gray-700 hover:text-blue-600 font-medium">Giới thiệu</Link>
+
+            <details className="group">
+              <summary className="list-none cursor-pointer text-gray-700 hover:text-blue-600 font-medium flex items-center justify-between">
+                <span>Dịch vụ</span>
+                <span className="transition-transform group-open:rotate-180">▾</span>
+              </summary>
+              <div className="mt-2 pl-3 space-y-2">
+                <Link href="/dich-vu/tu-van" className="block text-gray-700 hover:text-blue-600">Tư vấn tâm lý cùng AI</Link>
+                <Link href="/dich-vu/trac-nghiem-mbti/quiz" className="block text-gray-700 hover:text-blue-600">Trắc nghiệm tâm lý</Link>
+                <Link href="/dich-vu/yeu-cau-tu-van" className="block text-gray-700 hover:text-blue-600">Yêu cầu chuyên gia tư vấn</Link>
+                <Link href="/dich-vu/blog" className="block text-gray-700 hover:text-blue-600">Blog chữa lành</Link>
               </div>
-            )}
-            
-            <Link 
-              href="/careers" 
-              className="block py-2 text-gray-700 hover:text-blue-600 font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {t.careers}
-            </Link>
+            </details>
 
-            {/* Mobile Language Switcher */}
-            <div className="pt-2 border-t mt-2">
-              <button 
-                onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center text-gray-700 hover:text-blue-600"
-              >
-                <Globe className="w-5 h-5 mr-2" />
-                <span>{t.languages[language]}</span>
-              </button>
-              
-              {langOpen && (
-                <div className="ml-7 mt-1 space-y-1">
-                  <button 
-                    onClick={() => { setLanguage('vi'); setLangOpen(false); }}
-                    className="block w-full py-1 text-left text-gray-600 hover:text-blue-600"
-                  >
-                    {MENU.vi.languages.vi}
-                  </button>
-                  <button 
-                    onClick={() => { setLanguage('en'); setLangOpen(false); }}
-                    className="block w-full py-1 text-left text-gray-600 hover:text-blue-600"
-                  >
-                    {MENU.vi.languages.en}
-                  </button>
-                </div>
-              )}
-            </div>
+            <Link href="/tuyen-dung" className="block text-gray-700 hover:text-blue-600 font-medium">Tuyển dụng</Link>
 
-            {/* Mobile User Section */}
+            {/* Mobile user section */}
             {isLoggedIn && profile ? (
-              <div className="pt-2 border-t mt-2 space-y-2">
-                {profile.role === 'client' && (
-                  <>
-                    <Link 
-                      href="/ho-so/thong-tin" 
-                      className="block py-2 text-gray-700 hover:text-blue-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {t.profile}
-                    </Link>
-                    <Link 
-                      href="/ho-so/nhat-ky" 
-                      className="block py-2 text-gray-700 hover:text-blue-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {t.emotional_diary}
-                    </Link>
-                  </>
-                )}
-                {profile.role === 'expert' && (
-                  <>
-                    <Link 
-                      href="/chuyen-gia/ho-so" 
-                      className="block py-2 text-gray-700 hover:text-blue-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Hồ sơ
-                    </Link>
-                    <Link 
-                      href="/chuyen-gia/lich" 
-                      className="block py-2 text-gray-700 hover:text-blue-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Lịch tư vấn
-                    </Link>
-                  </>
-                )}
-                {profile.role === 'admin' && (
-                  <>
-                    <Link 
-                      href="/admin" 
-                      className="block py-2 text-gray-700 hover:text-blue-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Trang quản trị
-                    </Link>
-                    <Link 
-                      href="/admin/khach-hang" 
-                      className="block py-2 text-gray-700 hover:text-blue-600"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Quản lý người dùng
-                    </Link>
-                  </>
-                )}
-                <Link 
-                  href={
-                    profile.role === 'client' 
-                      ? '/ho-so/doi-mat-khau' 
-                      : profile.role === 'expert' 
-                        ? '/chuyen-gia/doi-mat-khau' 
-                        : '/admin/doi-mat-khau'
-                  } 
-                  className="block py-2 text-gray-700 hover:text-blue-600"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t.change_password}
-                </Link>
-                <button 
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="text-red-600 hover:text-red-800 py-2"
-                >
-                  {t.logout}
-                </button>
+              <div className="mt-4 border-t pt-3">
+                <div className="flex items-center gap-3">
+                  <Image src={avatarSrc} alt="User Avatar" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-blue-100" />
+                  <div className="text-sm">
+                    <p className="font-medium text-gray-800">{profile.role === 'admin' ? 'Admin' : profile.name}</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {profile.role === 'client' && (
+                    <>
+                      <Link href="/ho-so/thong-tin" className="block text-gray-700 hover:text-blue-600">Hồ sơ</Link>
+                      <Link href="/ho-so/nhat-ky" className="block text-gray-700 hover:text-blue-600">Nhật ký cảm xúc</Link>
+                    </>
+                  )}
+                  {profile.role === 'expert' && (
+                    <>
+                      <Link href="/chuyen-gia/ho-so" className="block text-gray-700 hover:text-blue-600">Hồ sơ</Link>
+                      <Link href="/chuyen-gia/yeu-cau-tu-van" className="block text-gray-700 hover:text-blue-600">Yêu cầu tư vấn</Link>
+                    </>
+                  )}
+                  {profile.role === 'admin' && (
+                    <>
+                      <Link href="/admin" className="block text-gray-700 hover:text-blue-600">Trang quản trị</Link>
+                      <Link href="/admin/khach-hang" className="block text-gray-700 hover:text-blue-600">Quản lý người dùng</Link>
+                    </>
+                  )}
+                  <button onClick={logout} className="w-full text-left text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg">Đăng xuất</button>
+                </div>
               </div>
             ) : (
-              <Link 
-                href="/tai-khoan/dang-nhap" 
-                className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-lg mt-3 font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t.start}
+              <Link href="/tai-khoan/dang-nhap" className="block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium text-center">
+                Bắt đầu
               </Link>
             )}
           </div>

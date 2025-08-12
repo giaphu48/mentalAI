@@ -1,155 +1,224 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { PaperAirplaneIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/solid';
-import axiosInstance from '@/helpers/api/config';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/hooks/useAppDispatch';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  PaperAirplaneIcon,
+  Bars3Icon,
+  XMarkIcon,
+  ClipboardDocumentIcon,
+  CheckIcon,
+} from "@heroicons/react/24/solid";
+import axiosInstance from "@/helpers/api/config";
+import { useRouter, useParams } from "next/navigation";
 import Sidebar from "@/components/chatSidebar/chatSidebar";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-
-
-type Message = {
+// Types
+ type Message = {
   id: string;
   content: string;
-  role: 'client' | 'ai' | 'expert';
-};
-
-type ChatSession = {
-  id: string;
-  title: string;
-  type: 'ai' | 'expert';
-  lastMessage: string;
-  updatedAt: string;
+  role: "client" | "ai" | "expert";
+  createdAt?: number; // local timestamp for ordering/UX
 };
 
 export default function ChatPage() {
+  // --- State ---
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      content: 'Xin chào! Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn?',
-      role: 'ai',
+      id: "welcome",
+      content: "Xin chào! Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn?",
+      role: "ai",
+      createdAt: Date.now(),
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ai' | 'expert'>('ai');
+  const [activeTab, setActiveTab] = useState<"ai" | "expert">("ai");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const router = useRouter();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const user = useSelector((state: RootState) => state.user.currentUser) || null;
-  const userId = user ? user.id : null;
-  const { sessionId } = useParams();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const router = useRouter();
+  const { sessionId } = useParams<{ sessionId?: string }>();
+
+  // Refs
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // --- Helpers ---
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, []);
+
+  const autoGrow = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = Math.min(el.scrollHeight, 200) + "px"; // cap at ~5-6 lines
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-    console.log(sessionId)
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: input,
-      role: 'client',
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
+  // --- Auth check (client-only safe) ---
+  useEffect(() => {
     try {
-      const endpoint = activeTab === 'ai' ? `/chats/AI/` : `/chats/expert/`;
-      const response = await axiosInstance.post(endpoint, {
-        userId,
-        message: input,
-      });
-
-      // const replyMessage: Message = {
-      //   id: Date.now().toString(),
-      //   content: response.data.reply,
-      //   role: activeTab === 'ai' ? 'ai' : 'expert',
-      // };
-
-      // setMessages((prev) => [...prev, replyMessage]);
-
-      // Nếu server trả về redirect (tức là session mới được tạo)
-      if (response.status === 201 && response.data.sessionId) {
-        const newSessionId = response.data.sessionId;
-        router.push(`/dich-vu/tu-van/${newSessionId}`);
-        return; // Dừng lại để không xử lý thêm
+      const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      if (!storedUser) {
+        router.push("/tai-khoan/dang-nhap");
+        return;
       }
-
-      // Nếu là phiên cũ, hiển thị phản hồi AI như bình thường
-      const replyMessage: Message = {
-        id: Date.now().toString(),
-        content: response.data.reply,
-        role: activeTab === 'ai' ? 'ai' : 'expert',
-      };
-
-      setMessages((prev) => [...prev, replyMessage]);
-    } catch (error) {
-      console.error('Error:', error);
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.',
-        role: activeTab === 'ai' ? 'ai' : 'expert',
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
+      const parsed = JSON.parse(storedUser);
+      if (!parsed?.id) {
+        router.push("/tai-khoan/dang-nhap");
+        return;
+      }
+      setUser(parsed);
+      setIsLoggedIn(true);
+    } catch (err) {
+      console.error("Lỗi khi kiểm tra đăng nhập:", err);
+      router.push("/tai-khoan/dang-nhap");
     }
-  };
+  }, [router]);
 
-  const createNewSession = () => {
-    router.push('/dich-vu/tu-van/');
-  };
-
-  const selectSession = (sessionId: string) => {
-    // In a real app, you would fetch messages for this session
-    console.log('Selected session:', sessionId);
-    // For demo, just show a placeholder
-    setMessages([
-      {
-        id: '1',
-        content: `Đang tải cuộc trò chuyện ${sessionId}...`,
-        role: activeTab === 'ai' ? 'ai' : 'expert',
-      },
-    ]);
-  };
-
+  // --- Load history when sessionId changes ---
   useEffect(() => {
     if (!sessionId) return;
-
+    let cancelled = false;
     const fetchChatHistory = async () => {
       try {
         const res = await axiosInstance.get(`/chats/history/${sessionId}`);
-        const messagesFromServer = res.data.messages;
-
-        const formattedMessages: Message[] = messagesFromServer.map((msg: any) => ({
-          id: msg.id,
-          content: msg.content,
-          role: msg.role,
+        if (cancelled) return;
+        const messagesFromServer = res.data?.messages ?? [];
+        const formatted: Message[] = messagesFromServer.map((m: any) => ({
+          id: String(m.id ?? crypto.randomUUID()),
+          content: String(m.content ?? ""),
+          role: (m.role as Message["role"]) ?? "ai",
+          createdAt: Number(m.createdAt ?? Date.now()),
         }));
-
-        setMessages(formattedMessages);
+        setMessages(formatted.length ? formatted : messages);
       } catch (error) {
-        console.error('Lỗi khi tải lịch sử chat:', error);
+        console.error("Lỗi khi tải lịch sử chat:", error);
       }
     };
-
     fetchChatHistory();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
+  // --- Actions ---
+  const createNewSession = useCallback(() => {
+    router.push("/dich-vu/tu-van/");
+  }, [router]);
+
+  const selectSession = useCallback(
+    (sid: string) => {
+      setMessages([
+        {
+          id: "loading",
+          content: `Đang tải cuộc trò chuyện ${sid}...`,
+          role: activeTab === "ai" ? "ai" : "expert",
+          createdAt: Date.now(),
+        },
+      ]);
+    },
+    [activeTab]
+  );
+
+  const handleSubmit = useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      const trimmed = input.trim();
+      if (!trimmed || !user?.id) return;
+
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        content: trimmed,
+        role: "client",
+        createdAt: Date.now(),
+      };
+
+      // Optimistic UI
+      setMessages((prev) => [...prev, userMessage]);
+      setInput("");
+      setIsLoading(true);
+      autoGrow();
+
+      try {
+        const endpoint = activeTab === "ai" ? `/chats/AI/` : `/chats/expert/`;
+        const response = await axiosInstance.post(endpoint, {
+          userId: user.id,
+          message: trimmed,
+          sessionId, // let backend attach to current session if any
+        });
+
+        // If server created a new session
+        if (response.status === 201 && response.data?.sessionId) {
+          const newSessionId = response.data.sessionId;
+          router.push(`/dich-vu/tu-van/voi-AI/${newSessionId}`);
+          return;
+        }
+
+        // Normal reply for existing session
+        const replyMessage: Message = {
+          id: crypto.randomUUID(),
+          content: String(response.data?.reply ?? "(không có nội dung)"),
+          role: activeTab === "ai" ? "ai" : "expert",
+          createdAt: Date.now(),
+        };
+        setMessages((prev) => [...prev, replyMessage]);
+      } catch (error) {
+        console.error("Error:", error);
+        const errorMessage: Message = {
+          id: crypto.randomUUID(),
+          content: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
+          role: activeTab === "ai" ? "ai" : "expert",
+          createdAt: Date.now(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [activeTab, autoGrow, input, router, sessionId, user?.id]
+  );
+
+  // Keyboard: Enter to send, Shift+Enter for newline
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit]
+  );
+
+  // Copy handler per message
+  const copyMessage = useCallback(async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch (err) {
+      console.error("Copy failed", err);
+    }
+  }, []);
+
+  // --- Render ---
+  if (!isLoggedIn) {
+    return (
+      <div className="flex h-screen items-center justify-center text-gray-600">Đang kiểm tra đăng nhập...</div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-dvh bg-gray-50">
       {/* Sidebar */}
       <Sidebar
         sidebarOpen={sidebarOpen}
@@ -160,76 +229,139 @@ export default function ChatPage() {
         selectSession={selectSession}
       />
 
-      {/* Main chat area */}
+      {/* Main */}
       <div className="flex-1 flex flex-col">
-        <header className="bg-blue-600 text-white p-4 shadow-md flex items-center">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="mr-4 p-1 rounded-md hover:bg-blue-700"
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
-          <h1 className="text-2xl font-bold">
-            {activeTab === 'ai' ? 'Trợ lý AI' : 'Chuyên gia tư vấn'}
-          </h1>
+        {/* Header */}
+        <header className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 shadow">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+              aria-label="Toggle sidebar"
+            >
+              {sidebarOpen ? (
+                <XMarkIcon className="h-6 w-6" />
+              ) : (
+                <Bars3Icon className="h-6 w-6" />
+              )}
+            </button>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+              {activeTab === "ai" ? "Trợ lý AI" : "Chuyên gia tư vấn"}
+            </h1>
+          </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'client' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-3/4 rounded-lg p-3 ${message.role === 'client'
-                  ? 'bg-blue-500 text-white'
-                  : message.role === 'ai'
-                    ? 'bg-white text-gray-800 shadow'
-                    : 'bg-green-100 text-gray-800 shadow'
-                  }`}
-              >
-                {message.content}
-              </div>
-            </div>
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-3">
+          {messages.map((m) => (
+            <MessageBubble
+              key={m.id}
+              message={m}
+              align={m.role === "client" ? "right" : "left"}
+              onCopy={copyMessage}
+              copied={copiedId === m.id}
+            />
           ))}
+
           {isLoading && (
-            <div className="flex justify-start">
-              <div className={`rounded-lg p-3 ${activeTab === 'ai' ? 'bg-white' : 'bg-green-100'
-                } shadow`}>
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-200"></div>
-                </div>
-              </div>
-            </div>
+            <TypingIndicator role={activeTab === "ai" ? "ai" : "expert"} />
           )}
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Composer */}
         <form
           onSubmit={handleSubmit}
-          className="p-4 border-t border-gray-300 bg-white"
+          className="sticky bottom-0 bg-white border-t border-gray-200 px-3 sm:px-6 py-3"
         >
-          <div className="flex space-x-2">
-            <input
-              type="text"
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              rows={1}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                autoGrow();
+              }}
+              onKeyDown={onKeyDown}
               placeholder="Nhập tin nhắn..."
-              className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 resize-none rounded-2xl border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white placeholder:text-gray-400"
               disabled={isLoading}
+              aria-label="Soạn tin nhắn"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
+              className="shrink-0 rounded-2xl bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              aria-label="Gửi tin nhắn"
             >
               <PaperAirplaneIcon className="h-5 w-5" />
+              <span className="hidden sm:inline">Gửi</span>
             </button>
           </div>
         </form>
       </div>
     </div>
+  );
+}
+
+// --- Subcomponents ---
+function MessageBubble({
+  message,
+  align = "left",
+  onCopy,
+  copied,
+}: {
+  message: Message;
+  align?: "left" | "right";
+  onCopy: (id: string, text: string) => void;
+  copied: boolean;
+}) {
+  const isUser = message.role === "client";
+  const isAI = message.role === "ai";
+
+  const bubbleClasses = isUser
+    ? "bg-blue-600 text-white"
+    : isAI
+    ? "bg-white text-gray-900 shadow"
+    : "bg-green-100 text-gray-900 shadow";
+
+  const badge = isUser ? "Bạn" : isAI ? "AI" : "Chuyên gia";
+
+  return (
+    <div className={`flex ${align === "right" ? "justify-end" : "justify-start"}`}>
+      <div className={`group max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${bubbleClasses}`}>
+        <div className="mb-1 text-xs opacity-70 select-none">{badge}</div>
+        <div className="prose prose-sm max-w-none prose-p:my-2 prose-pre:my-2 prose-pre:rounded-xl prose-pre:p-3 prose-code:before:content-[''] prose-code:after:content-['']">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TypingIndicator({ role }: { role: "ai" | "expert" }) {
+  return (
+    <div className="flex justify-start">
+      <div
+        className={`rounded-2xl px-4 py-3 shadow ${
+          role === "ai" ? "bg-white" : "bg-green-100"
+        }`}
+      >
+        <div className="flex items-center gap-1">
+          <Dot />
+          <Dot className="animation-delay-100" />
+          <Dot className="animation-delay-200" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dot({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-block h-2 w-2 rounded-full bg-gray-400 animate-bounce ${className}`}
+    />
   );
 }

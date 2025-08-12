@@ -3,6 +3,7 @@ import Header from '@/components/header/header';
 import { LanguageProvider } from '../context/languageContext';
 import { Providers } from '@/lib/Providers';
 
+
 // export const metadata = {
 //   title: 'MentalAI',
 //   description: 'AI Tư vấn tâm lý',
