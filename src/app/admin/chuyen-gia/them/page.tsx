@@ -89,7 +89,7 @@ export default function AddExpertPage() {
       {/* Header */}
       <div className="border-b px-6 py-4">
         <h4 className="mt-2 text-lg font-bold flex items-center gap-2">
-          THÊM TÀI KHOẢN
+          THÊM CHUYÊN GIA
           <i className="fas fa-user text-gray-600"></i>
         </h4>
       </div>
@@ -170,7 +170,7 @@ export default function AddExpertPage() {
                 loading ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
-              {loading ? "Đang xử lý..." : "Thêm"}
+              {loading ? "Đang xử lý..." : "Xác nhận"}
             </button>
             <a
               href="/admin/khach-hang"

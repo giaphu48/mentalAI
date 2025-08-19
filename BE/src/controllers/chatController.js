@@ -3,6 +3,7 @@ const {
   saveMessage,
   getChatHistory,
   getChatSessionsByUserId,
+  getChatSessionsById
 } = require("../models/chatModel");
 const axios = require("axios");
 const db = require("../configs/db");
@@ -106,15 +107,17 @@ const analyzeChatSession = async (req, res) => {
       question: conversation,
     });
 
-    const { emotion = "", behavior = "", advise = "" } = flaskResponse.data;
+    const { emotion = "", thought = "", behavior = "", advise = "" } = flaskResponse.data;
     const id = uuidv4();
 
     // 4. Lưu vào bảng emotion_diaries
     const insertQuery = `
-      INSERT INTO emotion_diaries (id, client_id, emotion, behavior, advise, entry_date)
-      VALUES (?, ?, ?, ?, ?, NOW())
+      INSERT INTO emotion_diaries (id, client_id, emotion, thought, behavior, advise, entry_date)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
     `;
-    await db.execute(insertQuery, [id, client_id, emotion, behavior, advise]);
+    await db.execute(insertQuery, [id, client_id, emotion, thought, behavior, advise]);
+
+    await db.query(`UPDATE chat_sessions SET status = 'closed' WHERE id = ?`, [sessionId]);
 
     // 5. Trả kết quả cho client
     return res.status(200).json({
@@ -135,7 +138,8 @@ const getChatHistoryBySessionId = async (req, res) => {
     if (!sessionId) {
       return res.status(400).json({ error: "Missing sessionId" });
     }
-
+    
+    const session = await getChatSessionsById(sessionId);
     const history = await getChatHistory(sessionId, 100);
     const messages = history.map((msg) => ({
       id: msg.id,
@@ -146,9 +150,10 @@ const getChatHistoryBySessionId = async (req, res) => {
 
     res.status(200).json({
       sessionId,
-      sessionName: history[0]?.session_name || "Phiên trò chuyện",
+      sessionName: session.session_name || "Phiên trò chuyện",
       sessionType: history[0]?.session_type,
       messages,
+      status: history[0]?.status,
     });
   } catch (err) {
     console.error("getChatHistoryBySessionId error:", err);
@@ -226,10 +231,37 @@ const getChatSessions = async (req, res) => {
   }
 };
 
+const deleteChatSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: "Missing sessionId" });
+    }
+
+    // Xóa tất cả tin nhắn thuộc phiên chat này
+    await db.query(`DELETE FROM chat_messages WHERE session_id = ?`, [sessionId]);
+
+    // Xóa phiên chat
+    const [result] = await db.query(`DELETE FROM chat_sessions WHERE id = ?`, [sessionId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    res.status(200).json({ message: "Session deleted successfully", sessionId });
+  } catch (err) {
+    console.error("deleteChatSession error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
 module.exports = {
   chatWithAI,
   chatWithExpert,
   getChatHistoryBySessionId,
   getChatSessions,
   analyzeChatSession,
+  deleteChatSession
 };

@@ -11,4 +11,6 @@ router.post('/', notifiController.createNotification);
 // Đánh dấu đã đọc
 router.patch('/:notification_id/read', notifiController.markNotificationAsRead);
 
+router.put('/read/:user_id', notifiController.markAllNotificationsAsRead);
+
 module.exports = router;

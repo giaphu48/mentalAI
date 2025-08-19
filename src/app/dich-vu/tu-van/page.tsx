@@ -27,7 +27,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "Xin chào! Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn?",
+      content: "Xin chào! Tôi là chatbot tư vấn tâm lý. Tôi có thể giúp gì cho bạn?",
       role: "ai",
       createdAt: Date.now(),
     },

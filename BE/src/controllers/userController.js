@@ -23,7 +23,7 @@ const userLogin = async (req, res) => {
     const user = await findUserByEmail(email);
 
     if (!user) {
-      return res.status(401).json({ message: "Lỗi khi đăng nhập" });
+      return res.status(401).json({ message: "Email hoặc mật khẩu không đúng" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);

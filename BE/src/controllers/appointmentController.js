@@ -12,15 +12,31 @@ async function createAppointment(req, res) {
       return res.status(400).json({ message: 'Thiếu dữ liệu bắt buộc' });
     }
 
-    const id = uuidv4();
+    // 1. Kiểm tra xem đã tồn tại request pending hoặc confirmed chưa
+    const [existing] = await db.query(
+      `SELECT id FROM requests 
+       WHERE client_id = ? AND expert_id = ? 
+         AND status IN ('pending', 'confirmed') 
+       LIMIT 1`,
+      [client_id, expert_id]
+    );
 
+    console.log(existing.length, 'existing requests found');
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        message: 'Bạn đã có yêu cầu đang chờ hoặc đã xác nhận với chuyên gia này',
+      });
+    }
+
+    const id = uuidv4();
     await db.query(
-      `INSERT INTO appointments (id, client_id, expert_id, status)
+      `INSERT INTO requests (id, client_id, expert_id, status)
        VALUES (?, ?, ?, 'pending')`,
       [id, client_id, expert_id]
     );
 
-    // Gửi thông báo cho expert
+    // 3. Gửi thông báo cho expert
     const message = 'Bạn có một yêu cầu tư vấn mới.';
     await db.query(
       `INSERT INTO notifications (id, user_id, message, type) VALUES (?, ?, ?, ?)`,
@@ -37,6 +53,7 @@ async function createAppointment(req, res) {
   }
 }
 
+
 /**
  * Expert chấp nhận appointment
  */
@@ -46,18 +63,18 @@ async function acceptAppointment(req, res) {
     const { clientId, expertId } = req.body; // lấy từ frontend gửi lên
 
     // Kiểm tra appointment tồn tại
-    const [appointments] = await db.query(
-      `SELECT * FROM appointments WHERE id = ?`,
+    const [requests] = await db.query(
+      `SELECT * FROM requests WHERE id = ?`,
       [id]
     );
 
-    if (appointments.length === 0) {
+    if (requests.length === 0) {
       return res.status(404).json({ message: 'Không tìm thấy appointment' });
     }
 
     // Cập nhật trạng thái appointment
     await db.query(
-      `UPDATE appointments SET status = 'confirmed' WHERE id = ?`,
+      `UPDATE requests SET status = 'confirmed' WHERE id = ?`,
       [id]
     );
 
@@ -86,6 +103,11 @@ async function acceptAppointment(req, res) {
       ]
     );
 
+    await db.query(
+      `UPDATE requests SET session_id = ? WHERE id = ?`,
+      [sessionId,id]
+    );
+
     // Gửi thông báo cho client
     const message = `Chuyên gia đã chấp nhận yêu cầu tư vấn của bạn.`;
     await db.query(
@@ -112,25 +134,61 @@ async function rejectAppointment(req, res) {
         const { id } = req.params;
 
         // Lấy appointment
-        const [appointments] = await db.query(
-            `SELECT * FROM appointments WHERE id = ?`,
+        const [requests] = await db.query(
+            `SELECT * FROM requests WHERE id = ?`,
             [id]
         );
 
-        if (appointments.length === 0) {
+        if (requests.length === 0) {
             return res.status(404).json({ message: 'Không tìm thấy appointment' });
         }
 
-        const appointment = appointments[0];
+        const appointment = requests[0];
 
         // Cập nhật trạng thái
         await db.query(
-            `UPDATE appointments SET status = 'rejected' WHERE id = ?`,
+            `UPDATE requests SET status = 'rejected' WHERE id = ?`,
             [id]
         );
 
         // Gửi thông báo cho client
         const message = `Chuyên gia đã từ chối yêu cầu tư vấn của bạn.`;
+        await db.query(
+            `INSERT INTO notifications (id, user_id, message, type) VALUES (?, ?, ?, ?)`,
+            [uuidv4(), appointment.client_id, message, 'appointment']
+        );
+
+        res.json({ message: 'Đã từ chối appointment và gửi thông báo cho client' });
+    } catch (error) {
+        console.error('❌ Lỗi khi từ chối appointment:', error);
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+}
+
+async function doneAppointment(req, res) {
+    try {
+        const { id } = req.params;
+
+        // Lấy appointment
+        const [requests] = await db.query(
+            `SELECT * FROM requests WHERE id = ?`,
+            [id]
+        );
+
+        if (requests.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy appointment' });
+        }
+
+        const appointment = requests[0];
+
+        // Cập nhật trạng thái
+        await db.query(
+            `UPDATE requests SET status = 'done' WHERE id = ?`,
+            [id]
+        );
+
+        // Gửi thông báo cho client
+        const message = `Chuyên gia đã hoàn thành yêu cầu tư vấn của bạn.`;
         await db.query(
             `INSERT INTO notifications (id, user_id, message, type) VALUES (?, ?, ?, ?)`,
             [uuidv4(), appointment.client_id, message, 'appointment']
@@ -152,6 +210,7 @@ async function getAllAppointmentsByExpert(req, res) {
           a.id,
           a.client_id,
           a.expert_id,
+          a.session_id,
           a.status,
           a.start_time,
           u.email,
@@ -159,7 +218,7 @@ async function getAllAppointmentsByExpert(req, res) {
           cp.name AS fullName,
           cp.gender,
           cp.dob
-        FROM appointments a
+        FROM requests a
         JOIN users u ON a.client_id = u.id
         LEFT JOIN client_profiles cp ON a.client_id = cp.user_id
         WHERE a.expert_id = ?`,
@@ -182,5 +241,6 @@ module.exports = {
   createAppointment,
   acceptAppointment,
   rejectAppointment,
-  getAllAppointmentsByExpert
+  getAllAppointmentsByExpert,
+  doneAppointment
 };

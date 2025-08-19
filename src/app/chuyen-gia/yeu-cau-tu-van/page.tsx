@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import axiosInstance from '@/helpers/api/config';
 
@@ -20,6 +21,7 @@ const ConsultationRequests = () => {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
   const expertData = localStorage.getItem('user');
   const expertId = expertData ? JSON.parse(expertData).id : null;
   const itemsPerPage = 5; // số dòng mỗi trang
@@ -50,8 +52,18 @@ const ConsultationRequests = () => {
         dob: item.dob ? new Date(item.dob).toLocaleDateString('vi-VN') : '',
         phone: item.phone,
         email: item.email,
-        status: item.status === 'confirmed' ? 'Đã liên hệ' : 'Chờ xử lý',
+        chatSessionId: item.session_id,
+        status:
+          item.status === 'confirmed'
+            ? 'Đã chấp nhận'
+            : item.status === 'rejected'
+              ? 'Đã từ chối'
+              : item.status === 'done'
+                ? 'Đã hoàn thành'
+                : 'Chờ xử lý',
       }));
+
+      console.log(mappedData)
       setRequests(mappedData);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách yêu cầu tư vấn:', error);
@@ -68,7 +80,7 @@ const ConsultationRequests = () => {
       if (res.status === 200) {
         setRequests((prev) =>
           prev.map((r) =>
-            r.id === appointmentId ? { ...r, status: 'Đã liên hệ' } : r
+            r.id === appointmentId ? { ...r, status: 'Đã chấp nhận' } : r
           )
         );
         alert('Đã chấp nhận yêu cầu và tạo phòng chat.');
@@ -91,6 +103,22 @@ const ConsultationRequests = () => {
       }
     } catch (error) {
       console.error('Lỗi khi từ chối yêu cầu:', error);
+    }
+  };
+
+  const handleDone = async (appointmentId: string) => {
+    try {
+      const res = await axiosInstance.put(`/appointments/${appointmentId}/done`);
+      if (res.status === 200) {
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === appointmentId ? { ...r, status: 'Đã hoàn thành' } : r
+          )
+        );
+        alert('Đã hoàn thành yêu cầu.');
+      }
+    } catch (error) {
+      console.error('Lỗi khi hoàn thành yêu cầu:', error);
     }
   };
 
@@ -164,29 +192,65 @@ const ConsultationRequests = () => {
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${request.status === 'Đã liên hệ'
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+    ${request.status === 'Đã chấp nhận'
                           ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'}`}
+                          : request.status === 'Đã từ chối'
+                            ? 'bg-red-100 text-red-800'
+                            : request.status === 'Đã hoàn thành'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                        }`}
                     >
                       {request.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button
-                        className="px-3 py-1 text-white bg-green-600 hover:bg-green-700 rounded-md"
-                        onClick={() => handleAccept(request.id, request.clientId, request.expertId)}
-                        disabled={request.status === 'Đã liên hệ'}
-                      >
-                        Chấp nhận
-                      </button>
-                      <button
-                        className="px-3 py-1 text-white bg-red-600 hover:bg-red-700 rounded-md"
-                        onClick={() => handleReject(request.id)}
-                      >
-                        Từ chối
-                      </button>
+                      <td className="px-6 py-4 text-sm font-medium">
+                        {request.status === 'Đã hoàn thành' ? (
+                          <span className="text-gray-500 italic">Phiên tư vấn đã kết thúc</span>
+                        ) : request.status === 'Đã từ chối' ? (
+                          <span className="text-gray-500 italic">Đã từ chối yêu cầu</span>
+                        ) : request.status === 'Đã chấp nhận' ? (
+                          <div className="flex space-x-2">
+                            <button
+                              className="px-3 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                              onClick={() => router.push(`/dich-vu/tu-van/voi-chuyen-gia/${request.chatSessionId}`)}
+                            >
+                              Chat
+                            </button>
+                            <button
+                              className="px-3 py-1 text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
+                              onClick={() => router.push(`/view/nhat-ky-cam-xuc/${request.clientId}`)}
+                            >
+                              Xem nhật ký
+                            </button>
+                            <button
+                              className="px-3 py-1 text-white bg-green-600 hover:bg-green-700 rounded-md"
+                              onClick={() => handleDone(request.id)}
+                            >
+                              Hoàn thành
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex space-x-2">
+                            <button
+                              className="px-3 py-1 text-white bg-green-600 hover:bg-green-700 rounded-md"
+                              onClick={() => handleAccept(request.id, request.clientId, request.expertId)}
+                            >
+                              Chấp nhận
+                            </button>
+                            <button
+                              className="px-3 py-1 text-white bg-red-600 hover:bg-red-700 rounded-md"
+                              onClick={() => handleReject(request.id)}
+                            >
+                              Từ chối
+                            </button>
+                          </div>
+                        )}
+                      </td>
+
                     </div>
                   </td>
                 </tr>

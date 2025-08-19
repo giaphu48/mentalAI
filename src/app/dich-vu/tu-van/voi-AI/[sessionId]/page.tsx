@@ -5,8 +5,6 @@ import {
   PaperAirplaneIcon,
   Bars3Icon,
   XMarkIcon,
-  ClipboardDocumentIcon,
-  CheckIcon,
 } from "@heroicons/react/24/solid";
 import axiosInstance from "@/helpers/api/config";
 import { useSelector } from "react-redux";
@@ -29,7 +27,7 @@ export default function ChatSessionPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "Xin chào! Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn?",
+      content: "Xin chào! Tôi là chatbot tư vấn tâm lý. Tôi có thể giúp gì cho bạn?",
       role: "ai",
       createdAt: Date.now(),
     },
@@ -41,6 +39,7 @@ export default function ChatSessionPage() {
   const [sessionName, setSessionName] = useState<string>("Phiên tư vấn");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<"open" | "closed">("open");
 
   const router = useRouter();
   const { sessionId } = useParams<{ sessionId?: string }>();
@@ -79,16 +78,21 @@ export default function ChatSessionPage() {
         if (cancelled) return;
         const messagesFromServer = res.data?.messages ?? [];
         const name = res.data?.sessionName ?? "Phiên tư vấn";
+        const status = (res.data?.status as "open" | "closed") ?? "open"; // <-- get session status
+
+        setSessionStatus(status); // save status
+        setSessionName(name);
         const formatted: Message[] = messagesFromServer.map((msg: any) => ({
           id: String(msg.id ?? crypto.randomUUID()),
           content: String(msg.content ?? ""),
           role: (msg.role as Message["role"]) ?? "ai",
           createdAt: Number(msg.createdAt ?? Date.now()),
         }));
-        setSessionName(name);
-        setMessages(formatted.length ? formatted : [
-          { id: "empty", content: "(Chưa có tin nhắn)", role: "ai", createdAt: Date.now() },
-        ]);
+        setMessages(
+          formatted.length
+            ? formatted
+            : [{ id: "empty", content: "(Chưa có tin nhắn)", role: "ai", createdAt: Date.now() }]
+        );
       } catch (error) {
         console.error("Lỗi khi tải lịch sử chat:", error);
       }
@@ -123,6 +127,7 @@ export default function ChatSessionPage() {
       e?.preventDefault();
       const trimmed = input.trim();
       if (!trimmed || !userId) return;
+      if (sessionStatus === "closed") return; // guard when closed
 
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -168,7 +173,7 @@ export default function ChatSessionPage() {
         setIsLoading(false);
       }
     },
-    [activeTab, autoGrow, input, sessionId, userId]
+    [activeTab, autoGrow, input, sessionId, userId, sessionStatus]
   );
 
   // Keyboard: Enter to send, Shift+Enter newline
@@ -194,11 +199,14 @@ export default function ChatSessionPage() {
 
     if (window.confirm('Bạn có chắc chắn muốn kết thúc phiên chat này?')) {
       try {
+        setEnding(true);
         // Gọi API phân tích và lưu vào emotion_diaries
         const res = await axiosInstance.post(`/chats/analyze/${sessionId}`, {
           client_id: userId,
         });
 
+        // Optional: chuyển trạng thái local ngay lập tức để khoá UI
+        setSessionStatus("closed");
 
         alert("Đã kết thúc phiên chat và lưu phân tích cảm xúc!");
 
@@ -207,9 +215,13 @@ export default function ChatSessionPage() {
       } catch (error) {
         console.error("Lỗi khi kết thúc phiên chat:", error);
         alert("Không thể phân tích phiên chat. Vui lòng thử lại.");
+      } finally {
+        setEnding(false);
       }
     }
   };
+
+  const isClosed = sessionStatus === "closed";
 
   return (
     <div className="flex h-dvh bg-gray-50">
@@ -245,16 +257,22 @@ export default function ChatSessionPage() {
 
             <button
               onClick={handleEndChatSession}
-              disabled={ending}
+              disabled={ending || isClosed}
               className="ml-4 px-3 sm:px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 rounded-lg font-medium transition-colors"
             >
-              {ending ? "Đang kết thúc..." : "Kết thúc phiên chat"}
+              {isClosed ? "Phiên đã kết thúc" : ending ? "Đang kết thúc..." : "Kết thúc phiên chat và ghi nhật ký"}
             </button>
           </div>
         </header>
 
         {/* Messages list */}
         <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-3">
+          {isClosed && (
+            <div className="text-center text-sm text-red-600 font-medium">
+              Phiên chat này đã kết thúc. Bạn không thể gửi thêm tin nhắn.
+            </div>
+          )}
+
           {messages.map((m) => (
             <MessageBubble
               key={m.id}
@@ -281,14 +299,18 @@ export default function ChatSessionPage() {
                 autoGrow();
               }}
               onKeyDown={onKeyDown}
-              placeholder="Nhập tin nhắn (Enter để gửi, Shift+Enter xuống dòng)"
+              placeholder={
+                isClosed
+                  ? "Phiên chat đã kết thúc"
+                  : "Nhập tin nhắn (Enter để gửi, Shift+Enter xuống dòng)"
+              }
               className="flex-1 resize-none rounded-2xl border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white placeholder:text-gray-400"
-              disabled={isLoading}
+              disabled={isLoading || isClosed}
               aria-label="Soạn tin nhắn"
             />
             <button
               type="submit"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() || isClosed}
               className="shrink-0 rounded-2xl bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed inline-flex items-center gap-2"
               aria-label="Gửi tin nhắn"
             >

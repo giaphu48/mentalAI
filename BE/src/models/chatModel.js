@@ -1,3 +1,4 @@
+const { get } = require('http');
 const db = require('../configs/db');
 const { v4: uuidv4 } = require("uuid");
 
@@ -52,7 +53,8 @@ async function getChatHistory(sessionId, limit = 100) {
         m.message, 
         m.created_at, 
         s.session_type,
-        s.session_name
+        s.session_name,
+        s.status
      FROM chat_messages AS m
      JOIN chat_sessions AS s 
        ON m.session_id = s.id
@@ -69,6 +71,7 @@ async function getChatHistory(sessionId, limit = 100) {
     created_at: row.created_at,
     session_name: row.session_name,
     session_type: row.session_type,
+    status: row.status,
   }));
 }
 
@@ -86,10 +89,18 @@ async function getChatSessionsByUserId(userId) {
      LEFT JOIN client_profiles cp 
        ON cs.client_id = cp.user_id
      WHERE cs.client_id = ? OR cs.expert_id = ?
-     ORDER BY cs.start_time DESC`,
+     ORDER BY cs.updated_at DESC`,
     [userId, userId]
   );
   return rows;
+}
+
+async function getChatSessionsById(sessionId) {
+  const [[session]] = await db.query(
+    "SELECT * FROM chat_sessions WHERE id = ?",
+    [sessionId]
+  );
+  return session;
 }
 
 async function saveEmotionDiary(sessionId, emotion, behavior, advise) {
@@ -106,4 +117,5 @@ module.exports = {
   getChatHistory,
   getChatSessionsByUserId,
   findSessionById,
+  getChatSessionsById
 };

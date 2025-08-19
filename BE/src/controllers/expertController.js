@@ -38,7 +38,7 @@ const getAllExpert = async(req,res) => {
         const[experts] = await db.query(
             `SELECT
                 users.id, users.email, users.phone, users.role,
-                expert_profiles.user_id, expert_profiles.name, expert_profiles.certification, expert_profiles.avatar
+                expert_profiles.user_id, expert_profiles.name, expert_profiles.certification, expert_profiles.avatar, expert_profiles.bio
             FROM users
             JOIN expert_profiles ON users.id = expert_profiles.user_id
             WHERE role = 'expert'
@@ -120,6 +120,7 @@ const uploadAvatar = async (req, res) => {
 
   const avatarUrl = file.path; // đường dẫn public trên Cloudinary
 
+  
   try {
     await db.query("UPDATE expert_profiles SET avatar = ? WHERE user_id = ?", [
       avatarUrl,

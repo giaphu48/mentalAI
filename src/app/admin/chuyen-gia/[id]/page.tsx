@@ -203,9 +203,9 @@ export default function EditExpertPage() {
             required
           >
             <option value="">Chọn bằng cấp</option>
-            <option value="bachelor">Cử nhân</option>
-            <option value="master">Thạc sĩ</option>
-            <option value="phd">Tiến sĩ</option>
+            <option value="Cử nhân">Cử nhân</option>
+            <option value="Thạc sĩ">Thạc sĩ</option>
+            <option value="Tiến sĩ">Tiến sĩ</option>
           </select>
         </div>
 
@@ -235,7 +235,7 @@ export default function EditExpertPage() {
               Xác nhận
             </button>
             <a
-              href="/admin/khach-hang"
+              href="/admin/chuyen-gia"
               className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md"
             >
               Quay lại

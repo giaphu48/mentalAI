@@ -7,7 +7,7 @@ const findUserByEmail = async (email) => {
 
 const findUserById = async (id) => {
   const [[user]] = await db.query(
-    `SELECT id, email, phone, is_verified, role FROM users WHERE id = ?`,
+    `SELECT id, email, phone, is_verified, role, password_hash FROM users WHERE id = ?`,
     [id]
   );
   return user;

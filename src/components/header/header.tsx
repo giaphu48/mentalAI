@@ -27,7 +27,6 @@ interface Notification {
 }
 
 export default function Header() {
-
   // UI state
   const [serviceOpen, setServiceOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -50,8 +49,12 @@ export default function Header() {
     return profile.role === 'admin' ? '/image/user.jpg' : profile.avatar || '/image/user.jpg';
   }, [profile]);
 
-  const unreadCount = useMemo(() => notifications.filter(n => !n.is_read).length, [notifications]);
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.is_read).length,
+    [notifications]
+  );
 
+  // Load profile
   useEffect(() => {
     const ac = new AbortController();
     (async () => {
@@ -65,37 +68,47 @@ export default function Header() {
         }
       }
     })();
-
     return () => ac.abort();
   }, []);
 
-  useEffect(() => {
-    if (!profile) return;
-    let interval: number | undefined;
-    const ac = new AbortController();
-
-    const fetchNotifications = async () => {
-      try {
-        const userId = profile.id;
-        if (!userId) return;
-        const res = await axiosInstance.get(`/notifications/${userId}`, { signal: ac.signal });
-        setNotifications(res.data || []);
-      } catch (err) {
-        if (!(err instanceof DOMException && err.name === 'AbortError')) {
-          console.error('❌ Error fetching notifications:', err);
-        }
+  // Fetch notifications (polling nhẹ)
+  const fetchNotifications = useCallback(async (signal?: AbortSignal) => {
+    try {
+      if (!profile?.id) return;
+      const res = await axiosInstance.get(`/notifications/${profile.id}`, { signal });
+      setNotifications(res.data || []);
+    } catch (err) {
+      if (!(err instanceof DOMException && (err as DOMException).name === 'AbortError')) {
+        console.error('❌ Error fetching notifications:', err);
       }
-    };
+    }
+  }, [profile?.id]);
 
-    fetchNotifications();
-    // light polling for freshness
-    interval = window.setInterval(fetchNotifications, 60_000);
+  useEffect(() => {
+    if (!profile?.id) return;
 
+    const ac = new AbortController();
+    fetchNotifications(ac.signal);
+
+    const interval = window.setInterval(() => fetchNotifications(), 60_000);
     return () => {
       ac.abort();
-      if (interval) window.clearInterval(interval);
+      window.clearInterval(interval);
     };
-  }, [profile]);
+  }, [profile?.id, fetchNotifications]);
+
+  // ✅ FIX: mark as read
+  const markNotificationsAsRead = useCallback(async () => {
+    if (!profile?.id || unreadCount === 0) return;
+    try {
+      const res = await axiosInstance.put(`/notifications/read/${profile.id}`);
+      if (res.status === 200) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      }
+    } catch (err) {
+      console.error('❌ Error marking notifications as read:', err);
+    }
+  }, [profile?.id, unreadCount]);
 
   // Close menus on outside click or Escape
   useEffect(() => {
@@ -125,7 +138,7 @@ export default function Header() {
 
   // Open one menu should close others (desktop)
   const toggleService = useCallback(() => {
-    setServiceOpen(v => {
+    setServiceOpen((v) => {
       const next = !v;
       if (next) {
         setNotifOpen(false);
@@ -136,18 +149,20 @@ export default function Header() {
   }, []);
 
   const toggleNotif = useCallback(() => {
-    setNotifOpen(v => {
+    setNotifOpen((v) => {
       const next = !v;
       if (next) {
         setServiceOpen(false);
         setUserDropdownOpen(false);
+        // ✅ Gọi mark-as-read khi mở khay và có unread
+        markNotificationsAsRead();
       }
       return next;
     });
-  }, []);
+  }, [markNotificationsAsRead]);
 
   const toggleUser = useCallback(() => {
-    setUserDropdownOpen(v => {
+    setUserDropdownOpen((v) => {
       const next = !v;
       if (next) {
         setServiceOpen(false);
@@ -157,15 +172,13 @@ export default function Header() {
     });
   }, []);
 
-  const toggleMobile = useCallback(() => setMobileMenuOpen(v => !v), []);
+  const toggleMobile = useCallback(() => setMobileMenuOpen((v) => !v), []);
 
   const logout = useCallback(async () => {
     try {
       await axiosInstance.post('/users/logout', {}, { withCredentials: true });
-      // Clear persisted states if any
       localStorage.removeItem('persist:root');
       localStorage.removeItem('user');
-      // Hard reload to reset client state
       window.location.assign('/');
     } catch (err) {
       console.error('❌ Logout failed:', err);
@@ -206,10 +219,10 @@ export default function Header() {
                   className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50"
                 >
                   <Link href="/dich-vu/tu-van" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
-                    Tư vấn tâm lý cùng AI
+                    Tư vấn tâm lý
                   </Link>
                   <Link href="/dich-vu/trac-nghiem-mbti/quiz" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
-                    Trắc nghiệm tâm lý
+                    Trắc nghiệm tính cách
                   </Link>
                   <Link href="/dich-vu/yeu-cau-tu-van" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
                     Yêu cầu chuyên gia tư vấn
@@ -238,7 +251,7 @@ export default function Header() {
                 >
                   <Bell className="w-6 h-6" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 grid place-items-center rounded-full">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 grid place-items-center rounded-full" aria-live="polite">
                       {unreadCount}
                     </span>
                   )}
@@ -250,7 +263,8 @@ export default function Header() {
                       <div className="max-h-80 overflow-auto">
                         {notifications.map((n) => (
                           <div key={n.id} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b">
-                            {n.message}
+                            <p className="leading-snug">{n.message}</p>
+                            <time className="block mt-1 text-xs text-gray-400">{new Date(n.created_at).toLocaleString()}</time>
                           </div>
                         ))}
                       </div>

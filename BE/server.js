@@ -10,6 +10,8 @@ const chatRoutes = require('./src/routes/chatRoute');
 const appointmentRoutes = require('./src/routes/appointmentRoute')
 const notificationRoutes = require('./src/routes/notificationRoute');
 const blogRoutes = require('./src/routes/blogRoute');
+const testRoutes = require('./src/routes/testRoute');
+
 app.use(express.json());  // Để đọc JSON body
 app.use(cookieParser());
 
@@ -26,6 +28,8 @@ app.use('/chats', chatRoutes);
 app.use('/appointments', appointmentRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/blogs', blogRoutes);
+app.use('/tests', testRoutes);
+
 
 app.listen(port, () => {
   console.log(`Server đang chạy tại http://localhost:${port}`);

@@ -96,6 +96,7 @@ export default function ChatWithExpertPage() {
     const fetchChatHistory = async () => {
       try {
         const res = await axiosInstance.get(`/chats/history/${sessionId}`);
+        console.log(res.data)
         if (cancelled) return;
 
         const { messages: serverMessages = [], sessionName, sessionType } = res.data ?? {};

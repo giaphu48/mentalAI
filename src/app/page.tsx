@@ -1,12 +1,14 @@
 'use client';
 import Head from 'next/head';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import teamImage from '../../public/image/photo-1573497019940-1c28c88b4f3e.avif';
 import Footer from '@/components/footer/footer'
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState('home')
+  const [activeTab, setActiveTab] = useState('home');
+  const router = useRouter();
 
   const services = [
     {
@@ -54,11 +56,9 @@ export default function HomePage() {
             Công nghệ AI và chuyên gia tâm lý đồng hành cùng bạn vượt qua căng thẳng, khám phá bản thân
           </p>
           <div className="flex flex-col md:flex-row justify-center gap-4">
-            <button className="bg-green-400 hover:bg-green-500 text-blue-900 font-bold py-3 px-6 rounded-full text-lg transition">
+            <button className="bg-green-400 hover:bg-green-500 text-blue-900 font-bold py-3 px-6 rounded-full text-lg transition"
+            onClick={() => router.push('/dich-vu/tu-van')}>
               Trò chuyện cùng AI
-            </button>
-            <button className="bg-blue-900 hover:bg-blue-800 border-2 border-white text-white font-bold py-3 px-6 rounded-full text-lg transition">
-              Trò chuyện cùng chuyên gia
             </button>
           </div>
         </div>
@@ -102,7 +102,10 @@ export default function HomePage() {
             <p className="text-lg text-blue-800 mb-6">
               Chúng tôi mang lại giải pháp tâm lý toàn diện kết hợp công nghệ và con người. Cam kết bảo mật và đồng hành dài lâu.
             </p>
-            <button className="bg-blue-800 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full border-2 border-blue-800 transition">
+            <button 
+              className="bg-blue-800 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full border-2 border-blue-800 transition"
+              onClick={() => router.push('/gioi-thieu')}
+            >
               Xem thêm
             </button>
           </div>

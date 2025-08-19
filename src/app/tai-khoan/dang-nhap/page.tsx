@@ -67,6 +67,7 @@ const LoginPage: React.FC = () => {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
         dispatch(loginSuccess(user));
+        alert("Đăng nhập thành công!");
         window.location.href = "/";
       } else {
         setError(t.unverified);

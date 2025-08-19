@@ -30,6 +30,46 @@ async function createBlog(req, res) {
     }
 }
 
+async function editBlog(req, res){
+    try{
+        const { id } = req.params;
+        const { title, content, category, read_time } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        let imageUrl = null;
+        if (req.file) {
+            imageUrl = req.file.path || req.file.filename;
+        }
+
+        await db.query(
+            'UPDATE blogs SET title = ?, content = ?, category = ?, read_time = ?, image_url = ? WHERE id = ?',
+            [title, content, category, read_time, imageUrl, id]
+        );
+
+        res.status(200).json({ message: 'Blog updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating blog', error: error.message });
+    }
+}
+
+async function deleteBlog(req, res) {
+    try {
+        const { id } = req.params;
+
+        const [result] = await db.query('DELETE FROM blogs WHERE id = ?', [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Blog not found' });
+        }
+
+        res.status(200).json({ message: 'Blog deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting blog', error: error.message });
+    }
+}
+
 async function getAllBlogs(req, res) {
     try {
         const [rows] = await db.query('SELECT * FROM blogs ORDER BY date DESC');
@@ -52,4 +92,10 @@ async function getBlogById(req, res) {
     }
 }
 
-module.exports = { createBlog, getAllBlogs, getBlogById };
+module.exports = { 
+    createBlog, 
+    getAllBlogs, 
+    getBlogById,
+    editBlog,
+    deleteBlog
+};

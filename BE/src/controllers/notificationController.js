@@ -59,8 +59,23 @@ async function markNotificationAsRead(req, res) {
   }
 }
 
+async function markAllNotificationsAsRead(req, res) {
+  try {
+    const { user_id } = req.params;
+    await db.query(
+      `UPDATE notifications SET is_read = TRUE WHERE user_id = ?`,
+      [user_id]
+    );
+    res.json({ message: 'Tất cả thông báo đã được đánh dấu là đã đọc' });
+  } catch (error) {
+    console.error('❌ Lỗi khi cập nhật thông báo:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+}
+
 module.exports = {
   getNotificationsByUser,
   createNotification,
-  markNotificationAsRead
+  markNotificationAsRead,
+  markAllNotificationsAsRead
 };

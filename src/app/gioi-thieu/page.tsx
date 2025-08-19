@@ -61,7 +61,7 @@ export default function AboutPage() {
             <div className="md:w-1/2 md:pl-12">
               <h2 className="text-3xl font-bold text-blue-900 mb-6">Câu Chuyện Của Chúng Tôi</h2>
               <p className="text-lg text-blue-800 mb-4">
-                MentalAI được thành lập năm 2020 với sứ mệnh phá vỡ rào cản trong tiếp cận dịch vụ sức khỏe tâm thần tại Việt Nam.
+                MentalAI được thành lập năm 2025 với sứ mệnh phá vỡ rào cản trong tiếp cận dịch vụ sức khỏe tâm thần tại Việt Nam.
               </p>
               <p className="text-lg text-blue-800 mb-4">
                 Xuất phát từ trải nghiệm cá nhân của người sáng lập khi chứng kiến những khó khăn tâm lý trong cộng đồng, chúng tôi quyết tâm xây dựng một nền tảng kết hợp giữa công nghệ và chuyên môn tâm lý.

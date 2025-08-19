@@ -28,7 +28,7 @@ const createClient = async (req, res) => {
     res.status(201).json({ message: "Đăng ký client thành công", id });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Lỗi khi đăng ký client" });
+    res.status(500).json({ message: "Tài khoản email đã tồn tại, vui lòng chọn tài khoản khác" });
   }
 };
 
@@ -308,7 +308,7 @@ const uploadAvatar = async (req, res) => {
     return res.status(400).json({ message: "No file uploaded." });
   }
 
-  const avatarUrl = file.path; // đường dẫn public trên Cloudinary
+  const avatarUrl = file.path;
 
   try {
     await db.query("UPDATE client_profiles SET avatar = ? WHERE user_id = ?", [

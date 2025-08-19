@@ -8,5 +8,6 @@ router.post("/expert/:sessionId", controller.chatWithExpert);
 router.get('/history/:id', controller.getChatHistoryBySessionId);
 router.get('/sessions', controller.getChatSessions);
 router.post('/analyze/:id', controller.analyzeChatSession);
+router.delete('/session/:sessionId', controller.deleteChatSession);
 
 module.exports = router;
