@@ -4,6 +4,7 @@ import type { NextPage } from 'next';
 import EmployeeGrid from '../../../components/profileList/profileList';
 import { useEffect, useMemo, useState } from 'react';
 import axiosInstance from '@/helpers/api/config';
+import { User } from 'lucide-react';
 
 interface Employee {
   id: string;
@@ -82,11 +83,17 @@ const Home: NextPage = () => {
   // Yêu cầu tư vấn
   const handleRequestConsultation = async (expertId: string) => {
     try {
-      const clientData = localStorage.getItem('user');
-      const clientId = clientData ? JSON.parse(clientData).id : null;
+      const userData = localStorage.getItem('user');
+      const userId = userData ? JSON.parse(userData).id : null;
+      const userRole = userData ? JSON.parse(userData).role : null;
 
-      if (!clientId) {
+      if (!userId) {
         alert('Bạn cần đăng nhập để gửi yêu cầu tư vấn.');
+        return;
+      }
+
+      if (userRole != "client"){
+        alert('Bạn phải là khách hàng mới có thể yêu cầu')
         return;
       }
 
@@ -94,7 +101,7 @@ const Home: NextPage = () => {
       const end_time = new Date(Date.now() + 30 * 60000).toISOString();
 
       const res = await axiosInstance.post('/appointments', {
-        client_id: clientId,
+        client_id: userId,
         expert_id: expertId,
         start_time,
         end_time,

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import axiosInstance from '@/helpers/api/config';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { RootState } from '@/hooks/useAppDispatch';
 import { FiEdit2, FiSave, FiUpload, FiUser, FiMail, FiPhone, FiCalendar, FiChevronDown, FiAward, FiInfo, FiX } from 'react-icons/fi';
 
@@ -48,6 +49,13 @@ const TEXT = {
 
 type Msg = { text: string; type: 'success' | 'error' | '' };
 
+type Role = 'expert' | 'admin' | 'client' | string;
+
+interface StoredUser {
+  id: string;
+  role?: Role | Role[]; // linh hoạt: có thể là string hoặc mảng
+}
+
 export default function ExpertProfilePage() {
   const user = useSelector((state: RootState) => state.user.currentUser);
   const [userId, setUserId] = useState<string | null>(null);
@@ -65,8 +73,39 @@ export default function ExpertProfilePage() {
   const [birthday, setBirthday] = useState<string>('');
   const [gender, setGender] = useState<string>('');
   const [certification, setCertification] = useState<string>('');
-
+  const router = useRouter();
   const avatarSrc = avatar || user?.profile?.avatar || '/image/user.jpg';
+
+  useEffect(() => {
+      try {
+        const raw = localStorage.getItem('user');
+        if (!raw) {
+          alert('Bạn cần đăng nhập để tiếp tục.');
+          router.replace('/');
+          return;
+        }
+  
+        const user = JSON.parse(raw) as StoredUser;
+        const role = user.role;
+  
+        const isExpert =
+          (typeof role === 'string' && role.toLowerCase() === 'expert') ||
+          (Array.isArray(role) && role.map((r) => r.toLowerCase()).includes('expert'));
+  
+        if (!isExpert) {
+          alert('Bạn không có quyền truy cập trang này. Chỉ dành cho chuyên gia.');
+          router.replace('/');
+          return;
+        }
+      } catch (e) {
+        console.error('Không đọc được thông tin người dùng:', e);
+        alert('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+        router.replace('/');
+        return;
+      } finally {
+  
+      }
+    }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

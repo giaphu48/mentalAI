@@ -53,7 +53,7 @@ const HealingBlog = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
-  const postsPerPage = 6
+  const postsPerPage = 3
 
   // Lọc bài viết theo danh mục và tìm kiếm
   const filteredPosts = allPosts.filter(post => {

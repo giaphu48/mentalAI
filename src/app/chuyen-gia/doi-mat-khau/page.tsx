@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { RootState } from '@/hooks/useAppDispatch';
 import axiosInstance from '@/helpers/api/config';
 import {
@@ -12,6 +13,13 @@ import {
   FiAlertCircle,
   FiCheckCircle,
 } from 'react-icons/fi';
+
+type Role = 'expert' | 'admin' | 'client' | string;
+
+interface StoredUser {
+  id: string;
+  role?: Role | Role[]; // linh hoạt: có thể là string hoặc mảng
+}
 
 const ChangePasswordPage: React.FC = () => {
   const user = useSelector((state: RootState) => state.user.currentUser) || null;
@@ -30,6 +38,39 @@ const ChangePasswordPage: React.FC = () => {
     type: '',
     text: '',
   });
+
+  const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (!raw) {
+        alert('Bạn cần đăng nhập để tiếp tục.');
+        router.replace('/');
+        return;
+      }
+
+      const user = JSON.parse(raw) as StoredUser;
+      const role = user.role;
+
+      const isExpert =
+        (typeof role === 'string' && role.toLowerCase() === 'expert') ||
+        (Array.isArray(role) && role.map((r) => r.toLowerCase()).includes('expert'));
+
+      if (!isExpert) {
+        alert('Bạn không có quyền truy cập trang này. Chỉ dành cho chuyên gia.');
+        router.replace('/');
+        return;
+      }
+    } catch (e) {
+      console.error('Không đọc được thông tin người dùng:', e);
+      alert('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+      router.replace('/');
+      return;
+    } finally {
+
+    }
+  }, [router]);
 
   useEffect(() => {
     setUserId(user ? user.id : null);

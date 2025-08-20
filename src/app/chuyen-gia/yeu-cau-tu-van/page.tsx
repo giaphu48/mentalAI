@@ -15,6 +15,14 @@ interface RequestItem {
   phone: string;
   email: string;
   status: string;
+  chatSessionId: string;
+}
+
+type Role = 'expert' | 'admin' | 'client' | string;
+
+interface StoredUser {
+  id: string;
+  role?: Role | Role[]; // linh hoạt: có thể là string hoặc mảng
 }
 
 const ConsultationRequests = () => {
@@ -37,6 +45,37 @@ const ConsultationRequests = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredRequests.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (!raw) {
+        alert('Bạn cần đăng nhập để tiếp tục.');
+        router.replace('/');
+        return;
+      }
+
+      const user = JSON.parse(raw) as StoredUser;
+      const role = user.role;
+
+      const isExpert =
+        (typeof role === 'string' && role.toLowerCase() === 'expert') ||
+        (Array.isArray(role) && role.map((r) => r.toLowerCase()).includes('expert'));
+
+      if (!isExpert) {
+        alert('Bạn không có quyền truy cập trang này. Chỉ dành cho chuyên gia.');
+        router.replace('/');
+        return;
+      }
+    } catch (e) {
+      console.error('Không đọc được thông tin người dùng:', e);
+      alert('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+      router.replace('/');
+      return;
+    } finally {
+
+    }
+  }, [router]);
 
   const fetchRequests = async () => {
     if (!expertId) return;
