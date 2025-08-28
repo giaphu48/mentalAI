@@ -18,7 +18,7 @@ from langchain.prompts import PromptTemplate
 # ======== CONFIG =========
 # =========================
 # ⚠️ Hard-code API key (demo/test). KHÔNG dùng cho production.
-OPENAI_API_KEY = "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"  # <<< thay bằng key thật
+OPENAI_API_KEY = ""  # <<< thay bằng key thật
 OPENAI_MODEL = "gpt-4o-mini"  # hoặc "gpt-4o" khi cần chất lượng cao hơn
 
 # FAISS: đặt đúng thư mục index bạn đã lưu
