@@ -1,18 +1,16 @@
+// ...existing code...
 "use client";
 
 import axiosInstance from "@/helpers/api/config";
 import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 
 type Option = { option_text: string; option_value: number | string };
 
 // ---- Page (App Router) chỉ nhận params/searchParams ----
-export default function Page({
-  params,
-}: {
-  params: { id: string };
-  searchParams?: Record<string, string | string[] | undefined>;
-}) {
-  const id = params.id;
+export default function Page() {
+  const params = useParams();
+  const id = String(params?.id ?? "");
 
   const [form, setForm] = useState<{
     dimension: "EI" | "SN" | "TF" | "JP";
@@ -425,3 +423,4 @@ export default function Page({
     </div>
   );
 }
+// ...existing code...
