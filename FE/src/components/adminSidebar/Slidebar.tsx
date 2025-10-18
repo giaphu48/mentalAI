@@ -14,7 +14,8 @@ const TEXT = {
     home: 'Trang chủ',
     customer: 'Quản lý khách hàng',
     expert: 'Quản lý chuyên gia',
-    blog: 'Quản lý Blog'
+    blog: 'Quản lý Blog',
+    test: 'Quản lý trắc nghiệm'
   },
   en: {
     brand: 'MentalAI',
@@ -22,7 +23,8 @@ const TEXT = {
     home: 'Dashboard',
     customer: 'Customer Management',
     expert: 'Expert Management',
-    blog: 'Blog Management'
+    blog: 'Blog Management',
+    test: 'Test Management'
   },
 };
 
@@ -60,7 +62,7 @@ const Sidebar = () => {
         <SidebarItem href="/admin/khach-hang" icon={<FaUsers />} text={t.customer} />
         <SidebarItem href="/admin/chuyen-gia" icon={<FaUser />} text={t.expert} />
         <SidebarItem href="/admin/blogs" icon={<FaBlog />} text={t.blog} />
-        <SidebarItem href="/admin/trac-nghiem" icon={<FaFile />} text="Quản lý trắc nghiệm" />
+        <SidebarItem href="/admin/trac-nghiem" icon={<FaFile />} text={t.test} />
       </nav>
 
       {/* Footer/Collapse button */}

@@ -18,6 +18,7 @@ from langchain.prompts import PromptTemplate
 # ======== CONFIG =========
 # =========================
 # ⚠️ Hard-code API key (demo/test). KHÔNG dùng cho production.
+# OPENAI_API_KEY = "your-openai-api-key-here"  
   # <<< Thay API Key và Model ở đây
 
 # FAISS: đặt đúng thư mục index bạn đã lưu

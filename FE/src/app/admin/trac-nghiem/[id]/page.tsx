@@ -1,49 +1,18 @@
 "use client";
 
 import axiosInstance from "@/helpers/api/config";
-import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-
-/**
- * UpdateMbtiQuestionUI — COMPONENT CẬP NHẬT CÂU HỎI MBTI
- * -----------------------------------------------------
- * - Lấy id từ route params
- * - GET /tests/:id để đổ dữ liệu vào form (đã chuẩn hoá nhiều format trả về)
- * - Cho phép chỉnh sửa dimension, question, và danh sách lựa chọn (value ∈ [-3,1,3])
- * - PUT /tests/:id khi submit
- */
 
 type Option = { option_text: string; option_value: number | string };
 
-type Props = {
-  onSubmit?: (payload: {
-    dimension: "EI" | "SN" | "TF" | "JP";
-    text: string;
-    options: { option_text: string; option_value: number }[];
-  }) => void;
-  onCancelHref?: string;
-};
-
-// Kiểu dữ liệu có thể từ backend (linh hoạt)
-type ApiQuestion = {
-  id?: string | number;
-  questionId?: string | number;
-  question?: string; // đôi khi có thể là `text`
-  text?: string;
-  dimension: "EI" | "SN" | "TF" | "JP";
-  // Trường hợp 1: mảng song song
-  options?: Array<string | { text?: string; option_text?: string; value?: number; option_value?: number }>;
-  option_values?: number[];
-  // Trường hợp 2: mảng object chuẩn
-  choices?: { option_text?: string; text?: string; option_value?: number; value?: number }[];
-};
-
-export default function UpdateMbtiQuestionUI({
-  onSubmit,
-  onCancelHref = "/admin/trac-nghiem",
-}: Props) {
-  const params = useParams();
-  const id = (params?.id as string) ?? "";
+// ---- Page (App Router) chỉ nhận params/searchParams ----
+export default function Page({
+  params,
+}: {
+  params: { id: string };
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
+  const id = params.id;
 
   const [form, setForm] = useState<{
     dimension: "EI" | "SN" | "TF" | "JP";
@@ -78,14 +47,24 @@ export default function UpdateMbtiQuestionUI({
   );
 
   const OPTION_VALUES = useMemo(() => [-3, 1, 3] as const, []);
+  const API_BASE = "/tests";
+  const onCancelHref = "/admin/trac-nghiem";
 
-  const API_BASE = "/tests"; // đổi nếu router khác
+  // --------- Kiểu dữ liệu từ API & chuẩn hoá ----------
+  type ApiQuestion = {
+    id?: string | number;
+    questionId?: string | number;
+    question?: string;
+    text?: string;
+    dimension: "EI" | "SN" | "TF" | "JP";
+    options?: Array<
+      string | { text?: string; option_text?: string; value?: number; option_value?: number }
+    >;
+    option_values?: number[];
+    choices?: { option_text?: string; text?: string; option_value?: number; value?: number }[];
+  };
 
-  // ---------- Helpers: Chuẩn hoá dữ liệu từ API ----------
-  const normalizeOptions = (
-    data: ApiQuestion
-  ): Option[] => {
-    // Ưu tiên dùng `choices`
+  const normalizeOptions = (data: ApiQuestion): Option[] => {
     if (Array.isArray(data.choices) && data.choices.length > 0) {
       return data.choices.map((c) => ({
         option_text: String(c.option_text ?? c.text ?? ""),
@@ -98,14 +77,12 @@ export default function UpdateMbtiQuestionUI({
 
     if (rawOpts.length > 0) {
       if (typeof rawOpts[0] === "string") {
-        // Case: options là string[] + option_values song song
         return (rawOpts as string[]).map((t, i) => ({
           option_text: String(t ?? ""),
           option_value: Number(rawVals[i] ?? 1),
         }));
       }
       if (typeof rawOpts[0] === "object") {
-        // Case: options là object[] {text/option_text, value/option_value}
         return (rawOpts as any[]).map((o) => ({
           option_text: String(o.option_text ?? o.text ?? ""),
           option_value: Number(o.option_value ?? o.value ?? 1),
@@ -113,7 +90,6 @@ export default function UpdateMbtiQuestionUI({
       }
     }
 
-    // Fallback zip nếu có
     if (rawOpts.length || rawVals.length) {
       const max = Math.max(rawOpts.length, rawVals.length);
       const result: Option[] = [];
@@ -125,7 +101,6 @@ export default function UpdateMbtiQuestionUI({
       return result;
     }
 
-    // No data → mặc định 2 lựa chọn
     return [
       { option_text: "", option_value: 1 },
       { option_text: "", option_value: -3 },
@@ -138,7 +113,7 @@ export default function UpdateMbtiQuestionUI({
     options: normalizeOptions(data),
   });
 
-  // ---------- Handlers ----------
+  // --------- Handlers ----------
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -231,15 +206,6 @@ export default function UpdateMbtiQuestionUI({
     try {
       const { data } = await axiosInstance.put(`${API_BASE}/${id}`, payload);
 
-      onSubmit?.({
-        dimension: form.dimension,
-        text: form.text,
-        options: form.options.map((o) => ({
-          option_text: String(o.option_text),
-          option_value: Number(o.option_value),
-        })),
-      });
-
       alert(`Cập nhật câu hỏi thành công! ID: ${data?.questionId ?? id}`);
     } catch (err: any) {
       console.error(err);
@@ -251,7 +217,7 @@ export default function UpdateMbtiQuestionUI({
     }
   };
 
-  // ---------- Fetch dữ liệu câu hỏi ----------
+  // --------- Fetch dữ liệu ----------
   const fetchQuestion = async () => {
     if (!id) {
       setFetchError("Thiếu id câu hỏi trong đường dẫn.");
@@ -278,7 +244,7 @@ export default function UpdateMbtiQuestionUI({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // ---------- UI ----------
+  // --------- UI ----------
   if (initialLoading) {
     return (
       <div className="bg-white shadow rounded-lg mb-6">
