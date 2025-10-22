@@ -18,7 +18,8 @@ from langchain.prompts import PromptTemplate
 # ======== CONFIG =========
 # =========================
 # ⚠️ Hard-code API key (demo/test). KHÔNG dùng cho production.
-# OPENAI_API_KEY = "your-openai-api-key-here"  
+OPENAI_API_KEY = "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"
+OPENAI_MODEL = "gpt-4.1"
   # <<< Thay API Key và Model ở đây
 
 # FAISS: đặt đúng thư mục index bạn đã lưu

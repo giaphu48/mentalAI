@@ -155,7 +155,7 @@ export default function Sidebar({
                     onClick={() => {
                       setActiveTab("ai");
                       // selectSession(session.id); // nếu bạn muốn dùng props này
-                      router.push(`/dich-vu/tu-van/voi-AI/${session.id}`);
+                      router.push(`/services/counseling/with-AI/${session.id}`);
                     }}
                     className={`p-3 rounded-lg cursor-pointer flex items-center justify-between ${
                       activeTab === "ai" ? "bg-blue-50" : "hover:bg-gray-100"
@@ -206,7 +206,7 @@ export default function Sidebar({
         key={session.id}
         onClick={() => {
           setActiveTab("expert");
-          router.push(`/dich-vu/tu-van/voi-chuyen-gia/${session.id}`);
+          router.push(`/services/counseling/with-expert/${session.id}`);
         }}
         className={`p-3 rounded-lg cursor-pointer flex items-center justify-between ${
           activeTab === "expert" ? "bg-green-50" : "hover:bg-gray-100"

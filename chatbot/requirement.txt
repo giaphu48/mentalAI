@@ -1,0 +1,10 @@
+flask
+langchain==0.3.3
+langchain-core==0.3.13
+langchain-community==0.3.2
+langchain-openai==0.2.2
+langchain-huggingface==0.1.1
+faiss-cpu
+transformers
+torch
+sentence-transformers

@@ -105,7 +105,7 @@ export default function ChatSessionPage() {
 
   // --- Actions ---
   const createNewSession = useCallback(() => {
-    router.push("/dich-vu/tu-van/");
+    router.push("/services/counseling/");
   }, [router]);
 
   const selectSession = useCallback(
@@ -211,7 +211,7 @@ export default function ChatSessionPage() {
         alert("Đã kết thúc phiên chat và lưu phân tích cảm xúc!");
 
         // Điều hướng về danh sách hoặc trang khác
-        router.push('/ho-so/nhat-ky');
+        router.push('/profiles/diaries');
       } catch (error) {
         console.error("Lỗi khi kết thúc phiên chat:", error);
         alert("Không thể phân tích phiên chat. Vui lòng thử lại.");

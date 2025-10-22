@@ -170,7 +170,7 @@ const HealingBlog = () => {
                     </div>
                     
                     <a
-                      href={`/dich-vu/blog/${post.id}`}
+                      href={`/services/blogs/${post.id}`}
                       className="mt-4 w-full block bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 px-4 rounded-lg transition text-center"
                     >
                       Đọc toàn bộ

@@ -102,7 +102,7 @@ const LoginPage: React.FC = () => {
                       : 'Don\'t have an account?'}
                   </p>
                   <Link 
-                    href="/tai-khoan/dang-ky" 
+                    href="/accounts/sign-up" 
                     className="inline-block mt-2 px-6 py-2 border-2 border-white text-white font-medium rounded-full hover:bg-white hover:text-blue-600 transition duration-300"
                   >
                     {t.register}
@@ -177,7 +177,7 @@ const LoginPage: React.FC = () => {
               <div className="mt-6 text-center md:hidden">
                 <p className="text-sm text-gray-600">
                   {t.noAccount}{' '}
-                  <Link href="/tai-khoan/dang-ky" className="text-blue-600 font-medium hover:underline">
+                  <Link href="/accounts/sign-up" className="text-blue-600 font-medium hover:underline">
                     {t.register}
                   </Link>
                 </p>

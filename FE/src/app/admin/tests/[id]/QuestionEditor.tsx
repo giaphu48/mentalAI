@@ -1,17 +1,11 @@
-// ...existing code...
 "use client";
 
 import axiosInstance from "@/helpers/api/config";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
 
 type Option = { option_text: string; option_value: number | string };
 
-// ---- Page (App Router) chỉ nhận params/searchParams ----
-export default function Page() {
-  const params = useParams();
-  const id = String(params?.id ?? "");
-
+export default function QuestionEditor({ id }: { id: string }) {
   const [form, setForm] = useState<{
     dimension: "EI" | "SN" | "TF" | "JP";
     text: string;
@@ -203,7 +197,6 @@ export default function Page() {
     setLoading(true);
     try {
       const { data } = await axiosInstance.put(`${API_BASE}/${id}`, payload);
-
       alert(`Cập nhật câu hỏi thành công! ID: ${data?.questionId ?? id}`);
     } catch (err: any) {
       console.error(err);
@@ -423,4 +416,3 @@ export default function Page() {
     </div>
   );
 }
-// ...existing code...

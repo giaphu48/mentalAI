@@ -38,14 +38,14 @@ export default function ProfileSidebar() {
   const menuItems =
     user?.role === "expert"
       ? [
-        { label: t.profile, href: "/chuyen-gia/ho-so" },
-        { label: t.schedule, href: "/chuyen-gia/yeu-cau-tu-van" },
-        { label: t.change_password, href: "/chuyen-gia/doi-mat-khau" },
+        { label: t.profile, href: "/experts/information" },
+        { label: t.schedule, href: "/experts/request-management" },
+        { label: t.change_password, href: "/experts/change-password" },
       ]
       : [
-        { label: t.info, href: "/ho-so/thong-tin" },
-        { label: t.password, href: "/ho-so/doi-mat-khau" },
-        { label: t.emotional_diaries, href: "/ho-so/nhat-ky" },
+        { label: t.info, href: "/profiles/informations" },
+        { label: t.password, href: "/profiles/change-password" },
+        { label: t.emotional_diaries, href: "/profiles/diaries" },
       ];
 
   return (

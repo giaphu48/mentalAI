@@ -113,7 +113,7 @@ export default function ChatPage() {
 
   // --- Actions ---
   const createNewSession = useCallback(() => {
-    router.push("/dich-vu/tu-van/");
+    router.push("/services/counseling/");
   }, [router]);
 
   const selectSession = useCallback(
@@ -160,7 +160,7 @@ export default function ChatPage() {
         // If server created a new session
         if (response.status === 201 && response.data?.sessionId) {
           const newSessionId = response.data.sessionId;
-          router.push(`/dich-vu/tu-van/voi-AI/${newSessionId}`);
+          router.push(`/services/counseling/with-AI/${newSessionId}`);
           return;
         }
 

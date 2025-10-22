@@ -199,7 +199,7 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8" aria-label="Chính">
             <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium">Trang chủ</Link>
-            <Link href="/gioi-thieu" className="text-gray-700 hover:text-blue-600 font-medium">Giới thiệu</Link>
+            <Link href="/about-us" className="text-gray-700 hover:text-blue-600 font-medium">Giới thiệu</Link>
 
             <div className="relative" ref={serviceRef}>
               <button
@@ -218,23 +218,23 @@ export default function Header() {
                   role="menu"
                   className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50"
                 >
-                  <Link href="/dich-vu/tu-van" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                  <Link href="/services/counseling" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
                     Tư vấn tâm lý
                   </Link>
-                  <Link href="/dich-vu/trac-nghiem-mbti/quiz" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                  <Link href="/services/mbti-test/quiz" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
                     Trắc nghiệm tính cách
                   </Link>
-                  <Link href="/dich-vu/yeu-cau-tu-van" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                  <Link href="/services/counseling-request" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
                     Yêu cầu chuyên gia tư vấn
                   </Link>
-                  <Link href="/dich-vu/blog" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
+                  <Link href="/services/blogs" className="block px-4 py-2 text-gray-700 hover:bg-blue-50" role="menuitem">
                     Blog chữa lành
                   </Link>
                 </div>
               )}
             </div>
 
-            <Link href="/tuyen-dung" className="text-gray-700 hover:text-blue-600 font-medium">Tuyển dụng</Link>
+            <Link href="/careers" className="text-gray-700 hover:text-blue-600 font-medium">Tuyển dụng</Link>
           </nav>
 
           {/* Right Side - Desktop */}
@@ -288,20 +288,19 @@ export default function Header() {
                   <div id="user-menu" role="menu" className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50">
                     {profile.role === 'client' && (
                       <>
-                        <Link href="/ho-so/thong-tin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Hồ sơ</Link>
-                        <Link href="/ho-so/nhat-ky" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Nhật ký cảm xúc</Link>
+                        <Link href="/profiles/informations" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Hồ sơ</Link>
+                        <Link href="/profiles/diaries" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Nhật ký cảm xúc</Link>
                       </>
                     )}
                     {profile.role === 'expert' && (
                       <>
-                        <Link href="/chuyen-gia/ho-so" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Hồ sơ</Link>
-                        <Link href="/chuyen-gia/yeu-cau-tu-van" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Yêu cầu tư vấn</Link>
+                        <Link href="/experts/information" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Hồ sơ</Link>
+                        <Link href="/experts/request-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Yêu cầu tư vấn</Link>
                       </>
                     )}
                     {profile.role === 'admin' && (
                       <>
                         <Link href="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Trang quản trị</Link>
-                        <Link href="/admin/khach-hang" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50" role="menuitem">Quản lý người dùng</Link>
                       </>
                     )}
                     <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50" role="menuitem">Đăng xuất</button>
@@ -309,7 +308,7 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <Link href="/tai-khoan/dang-nhap" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              <Link href="/accounts/sign-in" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                 Bắt đầu
               </Link>
             )}
@@ -339,14 +338,14 @@ export default function Header() {
                 <span className="transition-transform group-open:rotate-180">▾</span>
               </summary>
               <div className="mt-2 pl-3 space-y-2">
-                <Link href="/dich-vu/tu-van" className="block text-gray-700 hover:text-blue-600">Tư vấn tâm lý cùng AI</Link>
-                <Link href="/dich-vu/trac-nghiem-mbti/quiz" className="block text-gray-700 hover:text-blue-600">Trắc nghiệm tâm lý</Link>
-                <Link href="/dich-vu/yeu-cau-tu-van" className="block text-gray-700 hover:text-blue-600">Yêu cầu chuyên gia tư vấn</Link>
-                <Link href="/dich-vu/blog" className="block text-gray-700 hover:text-blue-600">Blog chữa lành</Link>
+                <Link href="/services/counseling" className="block text-gray-700 hover:text-blue-600">Tư vấn tâm lý cùng AI</Link>
+                <Link href="/services/mbti-test/quiz" className="block text-gray-700 hover:text-blue-600">Trắc nghiệm tâm lý</Link>
+                <Link href="/services/counseling-request" className="block text-gray-700 hover:text-blue-600">Yêu cầu chuyên gia tư vấn</Link>
+                <Link href="/services/blogs" className="block text-gray-700 hover:text-blue-600">Blog chữa lành</Link>
               </div>
             </details>
 
-            <Link href="/tuyen-dung" className="block text-gray-700 hover:text-blue-600 font-medium">Tuyển dụng</Link>
+            <Link href="/careers" className="block text-gray-700 hover:text-blue-600 font-medium">Tuyển dụng</Link>
 
             {/* Mobile user section */}
             {isLoggedIn && profile ? (
@@ -360,27 +359,26 @@ export default function Header() {
                 <div className="mt-3 space-y-2">
                   {profile.role === 'client' && (
                     <>
-                      <Link href="/ho-so/thong-tin" className="block text-gray-700 hover:text-blue-600">Hồ sơ</Link>
-                      <Link href="/ho-so/nhat-ky" className="block text-gray-700 hover:text-blue-600">Nhật ký cảm xúc</Link>
+                      <Link href="/profiles/informations" className="block text-gray-700 hover:text-blue-600">Hồ sơ</Link>
+                      <Link href="/profiles/diaries" className="block text-gray-700 hover:text-blue-600">Nhật ký cảm xúc</Link>
                     </>
                   )}
                   {profile.role === 'expert' && (
                     <>
-                      <Link href="/chuyen-gia/ho-so" className="block text-gray-700 hover:text-blue-600">Hồ sơ</Link>
-                      <Link href="/chuyen-gia/yeu-cau-tu-van" className="block text-gray-700 hover:text-blue-600">Yêu cầu tư vấn</Link>
+                      <Link href="/experts/information" className="block text-gray-700 hover:text-blue-600">Hồ sơ</Link>
+                      <Link href="/experts/request-management" className="block text-gray-700 hover:text-blue-600">Yêu cầu tư vấn</Link>
                     </>
                   )}
                   {profile.role === 'admin' && (
                     <>
                       <Link href="/admin" className="block text-gray-700 hover:text-blue-600">Trang quản trị</Link>
-                      <Link href="/admin/khach-hang" className="block text-gray-700 hover:text-blue-600">Quản lý người dùng</Link>
                     </>
                   )}
                   <button onClick={logout} className="w-full text-left text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg">Đăng xuất</button>
                 </div>
               </div>
             ) : (
-              <Link href="/tai-khoan/dang-nhap" className="block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium text-center">
+              <Link href="/accounts/sign-in" className="block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium text-center">
                 Bắt đầu
               </Link>
             )}

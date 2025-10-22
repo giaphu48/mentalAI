@@ -126,12 +126,12 @@ export default function ChatWithExpertPage() {
 
   // --- Actions ---
   const createNewSession = useCallback(() => {
-    router.push("/dich-vu/tu-van/");
+    router.push("/services/counseling/");
   }, [router]);
 
   const selectSession = useCallback(
     (sid: string) => {
-      router.push(`/dich-vu/tu-van/${sid}`);
+      router.push(`/services/counseling/${sid}`);
     },
     [router]
   );
@@ -258,7 +258,7 @@ export default function ChatWithExpertPage() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         createNewSession={createNewSession}
-        selectSession={(sid) => router.push(`/dich-vu/tu-van/${sid}`)}
+        selectSession={(sid) => router.push(`/services/counseling/${sid}`)}
       />
 
       {/* Main */}

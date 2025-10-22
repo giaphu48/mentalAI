@@ -109,7 +109,7 @@ export default function MBTIQuizPage() {
       setCurrentIndex(nextIndex);
     } else {
       const result = calculateMBTI(newAnswers, questions);
-      router.push(`/dich-vu/trac-nghiem-mbti/results?type=${result}`);
+      router.push(`/services/mbti-test/results?type=${result}`);
     }
   };
 
