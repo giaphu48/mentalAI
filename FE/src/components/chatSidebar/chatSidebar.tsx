@@ -206,7 +206,7 @@ export default function Sidebar({
         key={session.id}
         onClick={() => {
           setActiveTab("expert");
-          router.push(`/services/counseling/with-expert/${session.id}`);
+          router.push(`/services/counseling/with-experts/${session.id}`);
         }}
         className={`p-3 rounded-lg cursor-pointer flex items-center justify-between ${
           activeTab === "expert" ? "bg-green-50" : "hover:bg-gray-100"

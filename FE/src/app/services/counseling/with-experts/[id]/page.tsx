@@ -19,8 +19,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // --- Types ---
- type RoleType = "client" | "expert" | "ai";
- type Message = {
+type RoleType = "client" | "expert" | "ai";
+type Message = {
   id: string;
   content: string;
   role: RoleType;
@@ -90,13 +90,13 @@ export default function ChatWithExpertPage() {
   // --- Load history ---
   useEffect(() => {
     if (!sessionId) return;
+
     let cancelled = false;
 
-    
+    // Hàm lấy lịch sử chat
     const fetchChatHistory = async () => {
       try {
         const res = await axiosInstance.get(`/chats/history/${sessionId}`);
-        console.log(res.data)
         if (cancelled) return;
 
         const { messages: serverMessages = [], sessionName, sessionType } = res.data ?? {};
@@ -111,6 +111,7 @@ export default function ChatWithExpertPage() {
           role: (msg.role as RoleType) ?? "expert",
           createdAt: Number(msg.createdAt ?? Date.now()),
         }));
+
         setMessages(formatted);
       } catch (error) {
         console.error("Lỗi khi tải lịch sử chat:", error);
@@ -118,11 +119,19 @@ export default function ChatWithExpertPage() {
       }
     };
 
+    // Gọi lần đầu ngay khi vào
     fetchChatHistory();
+
+    // Thiết lập polling mỗi 3 giây
+    const interval = setInterval(fetchChatHistory, 3000);
+
+    // Cleanup khi component bị hủy
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [sessionId]);
+
 
   // --- Actions ---
   const createNewSession = useCallback(() => {
@@ -177,7 +186,7 @@ export default function ChatWithExpertPage() {
             role: getReplyRole(),
             createdAt: Date.now(),
           };
-        //   setMessages((prev) => [...prev, replyMessage]);
+          //   setMessages((prev) => [...prev, replyMessage]);
         } else {
           // Case B: backend returns entire history
           const formatted: Message[] = response.data.messages.map((msg: any) => ({
@@ -415,8 +424,8 @@ function MessageBubble({
   const bubbleClasses = isSender
     ? "bg-blue-600 text-white"
     : isAI
-    ? "bg-white text-gray-900 shadow"
-    : "bg-green-100 text-gray-900 shadow";
+      ? "bg-white text-gray-900 shadow"
+      : "bg-green-100 text-gray-900 shadow";
 
   const ts = message.createdAt ? new Date(message.createdAt) : null;
   const time = ts ? ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
@@ -445,9 +454,8 @@ function TypingIndicator({ role }: { role: "ai" | "expert" }) {
   return (
     <div className="flex justify-start">
       <div
-        className={`rounded-2xl px-4 py-3 shadow ${
-          role === "ai" ? "bg-white" : "bg-green-100"
-        }`}
+        className={`rounded-2xl px-4 py-3 shadow ${role === "ai" ? "bg-white" : "bg-green-100"
+          }`}
       >
         <div className="flex items-center gap-1">
           <Dot />

@@ -255,7 +255,7 @@ const ConsultationRequests = () => {
                           <div className="flex space-x-2">
                             <button
                               className="px-3 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded-md"
-                              onClick={() => router.push(`/dich-vu/tu-van/voi-chuyen-gia/${request.chatSessionId}`)}
+                              onClick={() => router.push(`/services/counseling/with-experts/${request.chatSessionId}`)}
                             >
                               Chat
                             </button>

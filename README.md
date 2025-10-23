@@ -82,7 +82,7 @@ cd mentalAI
 ```bash
 cd FE
 npm install
-npm run dev   # or npm start
+npm run dev
 ```
 
 The app will be available at **http://localhost:3000**
