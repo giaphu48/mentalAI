@@ -24,7 +24,6 @@ const DashboardPage = () => {
   const [blogs, setBlogs] = useState(0);
   const [questions, setQuestions] = useState(0);
 
-  // TODO: Nếu backend khác URL, sửa lại các endpoint dưới đây cho đúng hệ thống của bạn.
   const ENDPOINTS = useMemo(
     () => ({
       customers: '/clients',
@@ -99,7 +98,6 @@ const DashboardPage = () => {
       </div>
 
       {loading ? (
-        // Skeleton đơn giản khi đang tải
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <div

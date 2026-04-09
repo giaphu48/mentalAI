@@ -60,7 +60,6 @@ const Sidebar = () => {
         <SidebarItem href="/admin/customers" icon={<FaUsers />} text={t.customer} />
         <SidebarItem href="/admin/experts" icon={<FaUser />} text={t.expert} />
         <SidebarItem href="/admin/blogs" icon={<FaBlog />} text={t.blog} />
-        <SidebarItem href="/admin/tests" icon={<FaFile />} text="Quản lý trắc nghiệm" />
       </nav>
 
       {/* Footer/Collapse button */}
