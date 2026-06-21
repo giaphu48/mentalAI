@@ -68,19 +68,19 @@ export default function ChatPage() {
     try {
       const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
       if (!storedUser) {
-        router.push("/tai-khoan/dang-nhap");
+        router.push("/accounts/sign-in");
         return;
       }
       const parsed = JSON.parse(storedUser);
       if (!parsed?.id) {
-        router.push("/tai-khoan/dang-nhap");
+        router.push("/accounts/sign-in");
         return;
       }
       setUser(parsed);
       setIsLoggedIn(true);
     } catch (err) {
       console.error("Lỗi khi kiểm tra đăng nhập:", err);
-      router.push("/tai-khoan/dang-nhap");
+      router.push("/accounts/sign-in");
     }
   }, [router]);
 

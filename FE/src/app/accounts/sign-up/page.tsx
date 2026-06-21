@@ -140,7 +140,7 @@ const RegisterPage: React.FC = () => {
                       : 'Already have an account?'}
                   </p>
                   <Link 
-                    href="/tai-khoan/dang-nhap" 
+                    href="/accounts/sign-in" 
                     className="inline-block mt-2 px-6 py-2 border-2 border-white text-white font-medium rounded-full hover:bg-white hover:text-blue-600 transition duration-300"
                   >
                     {t.login}

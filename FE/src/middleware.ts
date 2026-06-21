@@ -8,7 +8,7 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
 
   if (!token) {
-    return NextResponse.redirect(new URL('tai-khoan/dang-nhap', req.url));
+    return NextResponse.redirect(new URL('/accounts/sign-in', req.url));
   }
 
   try {
@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/', req.url));
     }
   } catch (err) {
-    return NextResponse.redirect(new URL('tai-khoan/dang-nhap', req.url));
+    return NextResponse.redirect(new URL('/accounts/sign-in', req.url));
   }
 
   return NextResponse.next();
